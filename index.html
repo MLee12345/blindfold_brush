@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blindfold Brush</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="toolbar" aria-label="Drawing tools">
+        <h1>Blindfold Brush</h1>
+        <div class="controls">
+          <label for="brushColor">Color</label>
+          <input id="brushColor" type="color" value="#1f2937">
+
+          <label for="brushSize">Size</label>
+          <input id="brushSize" type="range" min="2" max="40" value="8">
+
+          <button id="clearCanvas" type="button">Clear</button>
+        </div>
+      </section>
+
+      <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+    </main>
+
+    <script src="drawing.js"></script>
+  </body>
+</html>
+
