@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Eraser icon">
+  <g transform="rotate(-28 12 12)">
+    <rect x="4" y="7" width="16" height="9" rx="3" fill="#fb7185"/>
+    <path fill="#f8fafc" d="M4 10C4 8.3 5.3 7 7 7H11V16H7C5.3 16 4 14.7 4 13V10Z"/>
+    <path fill="#fecdd3" d="M11 7H17C18.7 7 20 8.3 20 10V13C20 14.7 18.7 16 17 16H11V7Z"/>
+    <path fill="#64748b" opacity="0.5" d="M7 18H17C17.6 18 18 18.4 18 19S17.6 20 17 20H7C6.4 20 6 19.6 6 19S6.4 18 7 18Z"/>
+  </g>
+</svg>
