@@ -9,8 +9,12 @@
   --teal-dark: #115e59;
   --coral: #e35d45;
   --gold: #d99a16;
+  --sky: #2563eb;
+  --pink: #ec4899;
+  --lime: #22c55e;
+  --violet: #8b5cf6;
   --shadow: 0 20px 60px rgba(23, 32, 51, 0.14);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Comic Sans MS", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
   background: var(--page);
   color: var(--ink);
 }
@@ -19,25 +23,34 @@
   box-sizing: border-box;
 }
 
-html {
-  min-height: 100%;
+html,
+body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 34rem),
-    radial-gradient(circle at top right, rgba(227, 93, 69, 0.14), transparent 28rem),
-    linear-gradient(180deg, #fbfcfb 0%, var(--page) 100%);
+    radial-gradient(circle at 8% 12%, rgba(250, 204, 21, 0.56), transparent 12rem),
+    radial-gradient(circle at 86% 8%, rgba(59, 130, 246, 0.38), transparent 15rem),
+    radial-gradient(circle at 18% 92%, rgba(236, 72, 153, 0.32), transparent 14rem),
+    radial-gradient(circle at 92% 88%, rgba(34, 197, 94, 0.3), transparent 13rem),
+    linear-gradient(135deg, rgba(15, 118, 110, 0.12) 25%, transparent 25%) 0 0 / 34px 34px,
+    linear-gradient(225deg, rgba(227, 93, 69, 0.12) 25%, transparent 25%) 0 0 / 34px 34px,
+    linear-gradient(180deg, #fff4c7 0%, #e8f7ff 45%, #f2ffe7 100%);
+  color: var(--ink);
 }
 
 .app {
-  display: grid;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100vh;
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 16px 0 48px;
+  overflow: hidden;
+  padding: 10px 0;
 }
 
 [hidden] {
@@ -61,11 +74,15 @@ h2 {
 }
 
 h1 {
-  font-size: 40px;
+  color: #17324d;
+  font-size: 44px;
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(250, 204, 21, 0.55);
 }
 
 h2 {
   font-size: 24px;
+  font-weight: 900;
 }
 
 p {
@@ -83,16 +100,16 @@ button {
   border: 0;
   border-radius: 6px;
   padding: 0 14px;
-  background: var(--teal);
+  background: linear-gradient(135deg, var(--sky), var(--violet));
   color: white;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 button:hover {
-  background: var(--teal-dark);
-  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.24);
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.24);
   transform: translateY(-1px);
 }
 
@@ -143,15 +160,17 @@ input[type="range"] {
 .drawing-panel {
   border: 1px solid rgba(23, 32, 51, 0.08);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 12px 32px rgba(23, 32, 51, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88)),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.08), rgba(250, 204, 21, 0.12));
+  box-shadow: 0 12px 0 rgba(23, 32, 51, 0.08), 0 22px 38px rgba(23, 32, 51, 0.1);
 }
 
 .main-menu,
 .room-lobby {
   display: grid;
-  gap: 24px;
-  padding: 24px;
+  gap: 16px;
+  padding: 14px 16px;
 }
 
 .main-menu {
@@ -172,7 +191,7 @@ input[type="range"] {
 
 #roomCodeInput {
   text-transform: uppercase;
-  letter-spacing: 4px;
+  letter-spacing: 0;
   font-weight: 800;
 }
 
@@ -189,9 +208,9 @@ input[type="range"] {
 }
 
 #roomCodeTitle {
-  font-size: 48px;
+  font-size: 38px;
   line-height: 1;
-  letter-spacing: 8px;
+  letter-spacing: 0;
 }
 
 #playerList {
@@ -203,7 +222,7 @@ input[type="range"] {
 }
 
 #playerList li {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fbfcfb;
@@ -212,7 +231,10 @@ input[type="range"] {
 
 .game-area {
   display: grid;
-  gap: 14px;
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
 }
 
 .game-header {
@@ -228,9 +250,9 @@ input[type="range"] {
   align-items: center;
   gap: 14px;
   padding: 10px 14px;
-  border: 1px solid rgba(23, 32, 51, 0.1);
+  border: 2px solid rgba(250, 204, 21, 0.8);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: #fff6cf;
 }
 
 .round-status span {
@@ -243,27 +265,50 @@ input[type="range"] {
   font-size: 22px;
 }
 
+.round-status.is-low {
+  border-color: rgba(239, 68, 68, 0.75);
+  background: #ffe4e6;
+  animation: timerPulse 700ms ease-in-out infinite alternate;
+}
+
 .gameplay-layout {
   display: grid;
   grid-template-columns: minmax(190px, 230px) minmax(0, 1fr) minmax(240px, 280px);
-  gap: 18px;
+  gap: 14px;
   align-items: stretch;
+  min-height: 0;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
-  min-height: 560px;
-  padding: 18px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.leaderboard-panel {
+  border-top: 6px solid var(--gold);
+}
+
+.drawing-panel {
+  border-top: 6px solid var(--lime);
+}
+
+.chat-panel {
+  border-top: 6px solid var(--sky);
 }
 
 .panel-heading {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .leaderboard-list {
   display: grid;
-  gap: 12px;
+  flex: 1;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -271,18 +316,22 @@ input[type="range"] {
 
 .leaderboard-player {
   display: grid;
-  grid-template-columns: 24px 42px minmax(0, 1fr) auto;
+  grid-template-columns: 20px 36px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--line);
+  gap: 8px;
+  padding: 8px;
+  border: 2px solid #dbe7ef;
   border-radius: 8px;
-  background: #fbfcfb;
+  background: #ffffff;
 }
 
 .leaderboard-player.is-leading {
   border-color: rgba(217, 154, 22, 0.45);
   background: #fff8e8;
+}
+
+.leaderboard-player.score-bump {
+  animation: scorePop 520ms ease;
 }
 
 .rank {
@@ -292,11 +341,11 @@ input[type="range"] {
 
 .avatar {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   place-items: center;
   border-radius: 50%;
-  background: var(--teal);
+  background: linear-gradient(135deg, var(--teal), var(--sky));
   color: white;
   font-size: 13px;
   font-weight: 900;
@@ -327,8 +376,9 @@ input[type="range"] {
 .drawing-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  min-height: 560px;
-  padding: 18px 20px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 14px;
 }
 
 .prompt-card {
@@ -336,11 +386,11 @@ input[type="range"] {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border: 1px dashed rgba(15, 118, 110, 0.35);
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  border: 2px dashed rgba(236, 72, 153, 0.35);
   border-radius: 8px;
-  background: rgba(15, 118, 110, 0.06);
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.22), rgba(236, 72, 153, 0.12));
 }
 
 .prompt-card .eyebrow {
@@ -354,27 +404,42 @@ input[type="range"] {
 }
 
 .canvas-stage {
+  position: relative;
   display: grid;
   min-height: 0;
   place-items: center;
+  overflow: hidden;
+  border: 2px solid #c9d6e2;
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.16) 1px, transparent 1px),
+    linear-gradient(rgba(236, 72, 153, 0.11) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.13) 2px, transparent 2px),
+    #fffef7;
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, auto;
 }
 
 canvas {
   display: block;
-  width: 100%;
-  height: auto;
-  max-height: 100%;
-  border: 2px solid #24313f;
-  border-radius: 8px;
-  background: white;
-  box-shadow: var(--shadow);
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.14) 1px, transparent 1px),
+    rgba(255, 255, 255, 0.72);
+  background-size: 40px 40px, 40px 40px, auto;
+  box-shadow: none;
   cursor: none;
   touch-action: none;
 }
 
 .toolbar {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
 }
 
@@ -469,7 +534,7 @@ canvas {
 
 .color-swatch.is-active {
   border-color: #111827;
-  box-shadow: 0 0 0 2px white, 0 0 0 4px #111827;
+  box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pink);
 }
 
 .color-swatch:hover {
@@ -487,15 +552,18 @@ canvas {
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .chat-message {
   margin: 0;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: 8px;
-  background: #f4f7f6;
+  background: linear-gradient(135deg, #eef7ff, #f0fdf4);
   color: var(--ink);
   line-height: 1.45;
+  animation: messageSlide 180ms ease;
 }
 
 .chat-message strong {
@@ -506,7 +574,7 @@ canvas {
 
 .system-message {
   border: 1px solid rgba(217, 154, 22, 0.4);
-  background: #fff8e8;
+  background: linear-gradient(135deg, #fff8e8, #fdf2f8);
   color: #7c4a03;
   font-weight: 800;
 }
@@ -534,8 +602,53 @@ canvas {
   background: white;
 }
 
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scorePop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.04);
+    background: #e9fff4;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes timerPulse {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-2px);
+  }
+}
+
 @media (max-width: 700px) {
+  html,
+  body {
+    height: auto;
+    overflow: auto;
+  }
+
   .app {
+    height: auto;
+    min-height: 100vh;
     width: min(100% - 24px, 1180px);
     padding: 10px 0 32px;
   }
