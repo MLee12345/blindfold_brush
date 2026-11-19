@@ -20,6 +20,7 @@ let isRoundRevealed = false;
 let roundTimer = null;
 let selectedTool = "pen";
 let selectedColor = "#1f2937";
+let canUseDrawingTools = false;
 
 function resizeHiddenCanvas() {
   hiddenCanvas.width = canvas.width;
@@ -153,7 +154,7 @@ function paintDot(point, event) {
 function startDrawing(event) {
   event.preventDefault();
 
-  if (activePointerId !== null || isRoundRevealed) {
+  if (!canUseDrawingTools || activePointerId !== null || isRoundRevealed) {
     return;
   }
 
@@ -200,11 +201,15 @@ function stopDrawing(event) {
 }
 
 function clearCanvas() {
+  if (!canUseDrawingTools) {
+    return;
+  }
+
   startRound();
 }
 
 function undoLastAction() {
-  if (isRoundRevealed) {
+  if (!canUseDrawingTools || isRoundRevealed) {
     return;
   }
 
@@ -226,6 +231,10 @@ function handleKeyboardShortcut(event) {
 }
 
 function selectTool(toolName) {
+  if (!canUseDrawingTools) {
+    return;
+  }
+
   selectedTool = toolName;
 
   toolButtons.forEach((button) => {
@@ -238,6 +247,10 @@ function selectTool(toolName) {
 }
 
 function selectColor(color) {
+  if (!canUseDrawingTools) {
+    return;
+  }
+
   selectedColor = color;
   selectedTool = "pen";
 
@@ -266,6 +279,19 @@ function hideCursor() {
   renderCanvasView();
 }
 
+function setDrawingToolsAvailable(isAvailable) {
+  canUseDrawingTools = isAvailable;
+
+  if (!isAvailable) {
+    isDrawing = false;
+    activePointerId = null;
+    hiddenContext.closePath();
+    hiddenContext.globalCompositeOperation = "source-over";
+  }
+
+  document.querySelector(".controls").hidden = !isAvailable;
+}
+
 resizeHiddenCanvas();
 startRound();
 canvas.addEventListener("pointerdown", startDrawing);
@@ -289,4 +315,490 @@ colorButtons.forEach((button) => {
   });
 });
 document.addEventListener("keydown", handleKeyboardShortcut);
+
+function loadGameModule(path, globalName) {
+  if (window[globalName]) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = path;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.append(script);
+  });
+}
+
+function createElement(tagName, className, textContent) {
+  const element = document.createElement(tagName);
+
+  if (className) {
+    element.className = className;
+  }
+
+  if (textContent) {
+    element.textContent = textContent;
+  }
+
+  return element;
+}
+
+function installRuntimeStyles() {
+  const style = document.createElement("style");
+
+  style.textContent = `
+    .bb-room-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border: 1px solid #d7dfdd;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .bb-room-bar[hidden],
+    .bb-round-info[hidden] {
+      display: none;
+    }
+
+    .bb-room-input,
+    .bb-chat-input {
+      min-height: 36px;
+      border: 1px solid #c8d3e5;
+      border-radius: 6px;
+      padding: 0 10px;
+      font: inherit;
+    }
+
+    .bb-play-area {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr) 250px;
+      gap: 12px;
+    }
+
+    .bb-panel {
+      min-height: 0;
+      border: 1px solid #d7dfdd;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .bb-panel-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #172033;
+    }
+
+    .bb-leaderboard-list,
+    .bb-chat-messages {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .bb-leaderboard-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #f4f7fb;
+      font-size: 14px;
+    }
+
+    .bb-chat-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .bb-chat-messages {
+      align-content: start;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .bb-chat-message {
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #f4f7fb;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .bb-chat-message[data-type="system"] {
+      color: #0f766e;
+      font-weight: 700;
+      background: #e7f7f4;
+    }
+
+    .bb-chat-form {
+      display: flex;
+      gap: 6px;
+    }
+
+    .bb-chat-input {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .bb-round-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border: 1px solid #d7dfdd;
+      border-radius: 8px;
+      background: #ffffff;
+      font-weight: 700;
+    }
+
+    .bb-center-column {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .bb-canvas-stage {
+      min-height: 0;
+    }
+
+    @media (max-width: 850px) {
+      .bb-play-area {
+        grid-template-columns: 1fr;
+      }
+
+      .bb-panel {
+        max-height: 180px;
+      }
+    }
+  `;
+
+  document.head.append(style);
+}
+
+function initializeRuntimeGame() {
+  const app = document.querySelector(".app");
+  const toolbar = document.querySelector(".toolbar");
+  const canvasStage = document.querySelector(".canvas-stage");
+  const controls = document.querySelector(".controls");
+  const localPlayerId = `player-${Date.now()}`;
+
+  let currentPlayer = null;
+  let roomCreated = false;
+  let latestGameState = null;
+  let latestRoundResult = null;
+
+  const roomBar = createElement("section", "bb-room-bar");
+  const nicknameInput = createElement("input", "bb-room-input");
+  const roomCodeInput = createElement("input", "bb-room-input");
+  const createRoomButton = createElement("button", "", "Create Room");
+  const joinRoomButton = createElement("button", "", "Join Room");
+  const startGameButton = createElement("button", "", "Start Game");
+  const addPlayerButton = createElement("button", "", "Add Test Player");
+
+  nicknameInput.placeholder = "Nickname";
+  roomCodeInput.placeholder = "Room code";
+  startGameButton.disabled = true;
+  roomBar.append(nicknameInput, createRoomButton, roomCodeInput, joinRoomButton, addPlayerButton, startGameButton);
+
+  const playArea = createElement("section", "bb-play-area");
+  const leaderboardPanel = createElement("aside", "bb-panel");
+  const leaderboardTitle = createElement("h2", "bb-panel-title", "Leaderboard");
+  const leaderboardList = createElement("ol", "bb-leaderboard-list");
+  const centerColumn = createElement("section", "bb-center-column");
+  const roundInfo = createElement("div", "bb-round-info");
+  const hintText = createElement("span", "bb-hint-text", "Create a room to start.");
+  const timerText = createElement("span", "bb-timer-text", "");
+  const chatPanel = createElement("aside", "bb-panel bb-chat-panel");
+  const chatTitle = createElement("h2", "bb-panel-title", "Chat");
+  const chatMessages = createElement("ul", "bb-chat-messages");
+  const chatForm = createElement("form", "bb-chat-form");
+  const chatInput = createElement("input", "bb-chat-input");
+  const chatButton = createElement("button", "", "Send");
+
+  roundInfo.hidden = true;
+  chatInput.placeholder = "Type a guess";
+  chatInput.disabled = true;
+  chatButton.disabled = true;
+  roundInfo.append(hintText, timerText);
+  leaderboardPanel.append(leaderboardTitle, leaderboardList);
+  chatForm.append(chatInput, chatButton);
+  chatPanel.append(chatTitle, chatMessages, chatForm);
+  centerColumn.append(roundInfo, canvasStage);
+  playArea.append(leaderboardPanel, centerColumn, chatPanel);
+  toolbar.after(roomBar);
+  roomBar.after(playArea);
+
+  const chat = new window.BlindfoldBrushChat({
+    onMessage: renderChat,
+    onCorrectGuess: (playerId, guess) => {
+      game.markCorrectGuess(playerId, guess.guessedAt);
+    },
+  });
+  const scoring = new window.BlindfoldBrushScoring();
+  const game = new window.BlindfoldBrushGame({
+    onStateChange: (state) => {
+      latestGameState = state;
+      updateDrawingRole(state);
+      updateRoundInfo(state);
+      renderLeaderboard();
+    },
+    onTimerTick: ({ state, secondsRemaining }) => {
+      latestGameState = state;
+      updateTimer(secondsRemaining);
+      updateHint(state);
+    },
+    onRoundStart: (state) => {
+      chat.startRound({
+        answer: state.currentPrompt,
+        artistId: state.currentArtistId,
+        startedAt: state.roundStartedAt,
+      });
+      chatInput.placeholder = state.currentArtistId === localPlayerId ? "Artists cannot guess" : "Type a guess";
+      renderChat();
+      startRound();
+    },
+    onRoundEnd: (result) => {
+      chat.endRound();
+      latestRoundResult = scoring.scoreRound(result);
+      renderLeaderboard();
+      renderRoundResult(latestRoundResult);
+      revealDrawing();
+    },
+    onGameComplete: () => {
+      setDrawingToolsAvailable(false);
+      hintText.textContent = "Game complete.";
+      timerText.textContent = "";
+    },
+  });
+
+  setDrawingToolsAvailable(false);
+  renderChat();
+  renderLeaderboard();
+
+  function getNickname() {
+    return nicknameInput.value.trim() || "Player";
+  }
+
+  function createRoom() {
+    if (roomCreated) {
+      return;
+    }
+
+    currentPlayer = {
+      id: localPlayerId,
+      name: getNickname(),
+      isActive: true,
+    };
+    roomCreated = true;
+    game.addPlayer(currentPlayer);
+    scoring.setPlayers([currentPlayer]);
+    chat.messages = [];
+    renderChat();
+    renderLeaderboard();
+    chatInput.disabled = false;
+    chatButton.disabled = false;
+    startGameButton.disabled = game.getState().activePlayers.length < 2;
+    hintText.textContent = "Room created. Waiting for players.";
+    roundInfo.hidden = false;
+  }
+
+  function joinRoom() {
+    createRoom();
+    hintText.textContent = `Joined room ${roomCodeInput.value.trim() || "LOCAL"}.`;
+  }
+
+  function addTestPlayer() {
+    createRoom();
+    const nextNumber = game.getState().players.length + 1;
+    const player = {
+      id: `guest-${nextNumber}`,
+      name: `Player ${nextNumber}`,
+      isActive: true,
+    };
+
+    game.addPlayer(player);
+    scoring.setPlayers(game.getState().players);
+    startGameButton.disabled = game.getState().activePlayers.length < 2;
+    renderLeaderboard();
+  }
+
+  function startGameFromRoom() {
+    createRoom();
+    scoring.setPlayers(game.getState().players);
+    game.addPrompts(localPlayerId, ["sunflower", "spaceship", "pizza"]);
+    game.getState().players.forEach((player) => {
+      game.addPrompts(player.id, [`${player.name} prompt`, "banana", "castle"]);
+    });
+    game.startGame();
+  }
+
+  function updateDrawingRole(state) {
+    const isArtist = Boolean(currentPlayer && state.currentArtistId === currentPlayer.id && state.phase === "drawing");
+
+    setDrawingToolsAvailable(isArtist);
+    chatInput.disabled = !roomCreated || isArtist;
+    chatButton.disabled = !roomCreated || isArtist;
+  }
+
+  function updateRoundInfo(state) {
+    if (!roomCreated) {
+      return;
+    }
+
+    roundInfo.hidden = false;
+    updateHint(state);
+  }
+
+  function updateTimer(secondsRemaining) {
+    timerText.textContent = Number.isFinite(secondsRemaining) && secondsRemaining > 0
+      ? `${secondsRemaining}s`
+      : "";
+  }
+
+  function updateHint(state) {
+    if (!state) {
+      return;
+    }
+
+    if (state.phase === "prompt-selection") {
+      const artistName = getPlayerName(state.currentArtistId);
+      hintText.textContent = `${artistName} is choosing a prompt.`;
+      return;
+    }
+
+    if (state.phase === "drawing") {
+      const elapsedSeconds = Math.floor((Date.now() - state.roundStartedAt) / 1000);
+      const mask = chat.getAnswerMask(elapsedSeconds);
+      const isArtist = state.currentArtistId === localPlayerId;
+      hintText.textContent = isArtist ? `Draw: ${state.currentPrompt}` : `Hint: ${mask}`;
+      return;
+    }
+
+    if (state.phase === "results" && latestRoundResult) {
+      hintText.textContent = `Answer: ${latestRoundResult.prompt}`;
+      return;
+    }
+
+    if (state.phase === "complete") {
+      hintText.textContent = "Final leaderboard";
+      return;
+    }
+
+    hintText.textContent = "Room ready.";
+  }
+
+  function renderRoundResult(result) {
+    const summary = result.roundPoints.length
+      ? result.roundPoints.map((entry) => `${entry.playerName}: +${entry.points}`).join(", ")
+      : "No points this round.";
+
+    chat.addSystemMessage(`Round over. ${summary}`);
+  }
+
+  function renderLeaderboard() {
+    const rows = scoring.getLeaderboard();
+
+    if (rows.length === 0 && latestGameState) {
+      scoring.setPlayers(latestGameState.players);
+    }
+
+    const leaderboardRows = scoring.getLeaderboard();
+    leaderboardList.replaceChildren();
+
+    if (leaderboardRows.length === 0) {
+      const emptyRow = createElement("li", "bb-leaderboard-row", "No players yet");
+      leaderboardList.append(emptyRow);
+      return;
+    }
+
+    leaderboardRows.forEach((player) => {
+      const row = createElement("li", "bb-leaderboard-row");
+      const name = createElement("span", "", `${player.rank}. ${player.playerName}`);
+      const score = createElement("strong", "", String(player.totalPoints));
+      row.append(name, score);
+      leaderboardList.append(row);
+    });
+  }
+
+  function renderChat() {
+    chatMessages.replaceChildren();
+    const messages = chat.getVisibleMessages();
+
+    messages.forEach((message) => {
+      const row = createElement("li", "bb-chat-message");
+      row.dataset.type = message.type;
+      row.textContent = message.type === "system"
+        ? message.text
+        : `${message.playerName}: ${message.text}`;
+      chatMessages.append(row);
+    });
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function getPlayerName(playerId) {
+    const state = latestGameState || game.getState();
+    const player = state.players.find((savedPlayer) => savedPlayer.id === playerId);
+
+    return player ? player.name || player.nickname || "Player" : "Player";
+  }
+
+  createRoomButton.addEventListener("click", createRoom);
+  joinRoomButton.addEventListener("click", joinRoom);
+  addPlayerButton.addEventListener("click", addTestPlayer);
+  startGameButton.addEventListener("click", startGameFromRoom);
+  chatForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    if (!currentPlayer) {
+      createRoom();
+    }
+
+    const state = latestGameState || game.getState();
+    const text = chatInput.value;
+    const result = state.phase === "drawing"
+      ? chat.submitGuess({ playerId: currentPlayer.id, playerName: currentPlayer.name, text })
+      : chat.submitMessage({ playerId: currentPlayer.id, playerName: currentPlayer.name, text });
+
+    if (result.accepted) {
+      chatInput.value = "";
+    }
+  });
+
+  window.BlindfoldBrushRuntime = {
+    game,
+    chat,
+    scoring,
+    addPlayer: (player) => {
+      game.addPlayer(player);
+      scoring.setPlayers(game.getState().players);
+      startGameButton.disabled = game.getState().activePlayers.length < 2;
+      renderLeaderboard();
+    },
+    renderLeaderboard,
+    renderChat,
+  };
+}
+
+installRuntimeStyles();
+Promise.all([
+  loadGameModule("game.js", "BlindfoldBrushGame"),
+  loadGameModule("chat.js", "BlindfoldBrushChat"),
+  loadGameModule("scoring.js", "BlindfoldBrushScoring"),
+]).then(initializeRuntimeGame);
 
