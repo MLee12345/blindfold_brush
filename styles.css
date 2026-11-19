@@ -121,6 +121,15 @@ input[type="text"] {
   color: var(--ink);
 }
 
+input[type="color"] {
+  width: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
 input[type="range"] {
   width: 150px;
   accent-color: var(--teal);
