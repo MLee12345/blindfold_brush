@@ -1,6 +1,7 @@
-const ROOM_CODE_LENGTH = 6;
+const ROOM_CODE_LENGTH = 4;
 const MAX_ACTIVE_PLAYERS = 6;
 const MIN_ACTIVE_PLAYERS = 2;
+const ROOM_STORAGE_PREFIX = "blindfold-brush-room:";
 const ROOM_PHASES = {
   lobby: "lobby",
   promptSubmission: "prompt-submission",
@@ -10,7 +11,7 @@ const ROOM_PHASES = {
 };
 
 function createRoomCode(existingCodes = []) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const usedCodes = new Set(existingCodes.map(normalizeRoomCode));
   let code = "";
 
@@ -29,7 +30,12 @@ function normalizeRoomCode(roomCode) {
   return String(roomCode || "")
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
+    .replace(/[^A-Z]/g, "")
+    .slice(0, ROOM_CODE_LENGTH);
+}
+
+function createPlayerId() {
+  return `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function createPlayerRecord(player, { isHost = false, isSpectator = false } = {}) {
@@ -202,17 +208,22 @@ class BlindfoldBrushRoomManager {
 
   create(hostPlayer) {
     const room = createRoom(hostPlayer, this.listCodes());
-    this.rooms.set(room.code, room);
-    return cloneRoom(room);
+    return this.save(room);
   }
 
   get(roomCode) {
-    const room = this.rooms.get(normalizeRoomCode(roomCode));
+    const code = normalizeRoomCode(roomCode);
+    const room = this.rooms.get(code) || this.loadRoom(code);
     return room ? cloneRoom(room) : null;
   }
 
   save(room) {
-    this.rooms.set(normalizeRoomCode(room.code), cloneRoom(room));
+    const code = normalizeRoomCode(room.code);
+    const savedRoom = cloneRoom(room);
+
+    this.rooms.set(code, savedRoom);
+    this.saveRoom(savedRoom);
+
     return this.get(room.code);
   }
 
@@ -229,7 +240,49 @@ class BlindfoldBrushRoomManager {
   }
 
   listCodes() {
-    return [...this.rooms.keys()];
+    const savedCodes = this.listSavedCodes();
+
+    return [...new Set([...this.rooms.keys(), ...savedCodes])];
+  }
+
+  loadRoom(roomCode) {
+    const code = normalizeRoomCode(roomCode);
+
+    try {
+      const roomJson = window.localStorage.getItem(`${ROOM_STORAGE_PREFIX}${code}`);
+      const room = roomJson ? JSON.parse(roomJson) : null;
+
+      if (room) {
+        this.rooms.set(code, room);
+      }
+
+      return room;
+    } catch (error) {
+      window.console.warn("Could not load room.", error);
+      return null;
+    }
+  }
+
+  saveRoom(room) {
+    try {
+      window.localStorage.setItem(`${ROOM_STORAGE_PREFIX}${room.code}`, JSON.stringify(room));
+    } catch (error) {
+      window.console.warn("Could not save room.", error);
+    }
+  }
+
+  listSavedCodes() {
+    const codes = [];
+
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+
+      if (key && key.startsWith(ROOM_STORAGE_PREFIX)) {
+        codes.push(key.replace(ROOM_STORAGE_PREFIX, ""));
+      }
+    }
+
+    return codes;
   }
 }
 
@@ -237,12 +290,15 @@ window.BlindfoldBrushRooms = {
   ROOM_CODE_LENGTH,
   MAX_ACTIVE_PLAYERS,
   MIN_ACTIVE_PLAYERS,
+  ROOM_STORAGE_PREFIX,
   ROOM_PHASES,
   BlindfoldBrushRoomManager,
   canStartGame,
   createInviteLink,
+  createPlayerId,
   createRoom,
   createRoomCode,
+  findPlayer,
   getActivePlayers,
   joinRoom,
   leaveRoom,
