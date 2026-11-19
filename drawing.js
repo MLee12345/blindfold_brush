@@ -419,9 +419,12 @@ function installRuntimeStyles() {
     }
 
     .bb-leaderboard-row {
-      display: flex;
-      justify-content: space-between;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
       gap: 8px;
+      width: fit-content;
+      max-width: 100%;
       padding: 6px 8px;
       border-radius: 6px;
       background: #f4f7fb;
