@@ -113,6 +113,16 @@ button:hover {
   transform: translateY(-1px);
 }
 
+.secondary-button {
+  background: #e5edf6;
+  color: var(--ink);
+}
+
+.secondary-button:hover {
+  background: #d6e2ef;
+  box-shadow: 0 10px 22px rgba(23, 32, 51, 0.12);
+}
+
 button:active {
   transform: translateY(0);
 }
@@ -216,6 +226,10 @@ input[type="range"] {
   gap: 10px;
 }
 
+.main-menu.is-joining .button-row {
+  display: none;
+}
+
 .join-room-panel {
   display: grid;
   gap: 8px;
@@ -227,7 +241,7 @@ input[type="range"] {
 
 .join-code-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
 }
 
@@ -342,7 +356,7 @@ input[type="range"] {
 
 .gameplay-layout {
   display: grid;
-  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) minmax(240px, 280px);
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(240px, 280px);
   gap: 12px;
   align-items: stretch;
   min-height: 0;
@@ -393,11 +407,10 @@ input[type="range"] {
 }
 
 .leaderboard-player {
-  display: grid;
-  grid-template-columns: 16px 24px minmax(0, 1fr);
+  display: block;
   align-items: center;
-  gap: 5px;
-  padding: 5px 6px;
+  min-height: 26px;
+  padding: 4px 8px;
   border: 1px solid #dbe7ef;
   border-radius: 6px;
   background: #ffffff;
@@ -430,32 +443,18 @@ input[type="range"] {
 }
 
 .player-info {
+  display: block;
   min-width: 0;
 }
 
-.player-info strong,
-.player-info small {
+.player-info strong {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.player-info strong {
   font-size: 12px;
-}
-
-.player-info small {
-  margin-top: 1px;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.score {
-  grid-column: 2 / -1;
-  justify-self: start;
+  line-height: 18px;
   font-weight: 900;
-  font-size: 11px;
 }
 
 .drawing-panel {
