@@ -2,6 +2,7 @@ const ROOM_CODE_LENGTH = 4;
 const MAX_ACTIVE_PLAYERS = 6;
 const MIN_ACTIVE_PLAYERS = 2;
 const ROOM_STORAGE_PREFIX = "blindfold-brush-room:";
+const ROOM_EVENT_PREFIX = "blindfold-brush-room-event:";
 const ROOM_PHASES = {
   lobby: "lobby",
   promptSubmission: "prompt-submission",
@@ -38,6 +39,10 @@ function createPlayerId() {
   return `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function createRoomEventId() {
+  return `room-event-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function createPlayerRecord(player, { isHost = false, isSpectator = false } = {}) {
   if (!player || !player.id) {
     throw new Error("Player must include an id.");
@@ -58,21 +63,24 @@ function createPlayerRecord(player, { isHost = false, isSpectator = false } = {}
 function createRoom(hostPlayer, existingCodes = []) {
   const code = createRoomCode(existingCodes);
   const host = createPlayerRecord(hostPlayer, { isHost: true });
+  const now = Date.now();
 
   return {
     code,
     phase: ROOM_PHASES.lobby,
     hostId: host.id,
     players: [host],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    messages: [],
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
 function cloneRoom(room) {
   return {
     ...room,
-    players: room.players.map((player) => ({ ...player })),
+    players: (room.players || []).map((player) => ({ ...player })),
+    messages: (room.messages || []).map((message) => ({ ...message })),
   };
 }
 
@@ -84,12 +92,48 @@ function findPlayer(room, playerId) {
   return room.players.find((player) => player.id === playerId);
 }
 
+function isPreviewBot(record) {
+  const nickname = String(record?.nickname || record?.name || "");
+
+  return (
+    record?.isBot === true ||
+    record?.isPreview === true ||
+    record?.source === "preview" ||
+    record?.source === "bot" ||
+    /^bot\b/i.test(nickname)
+  );
+}
+
+function cleanRoom(room) {
+  if (!room) {
+    return null;
+  }
+
+  const cleanedRoom = {
+    ...room,
+    code: normalizeRoomCode(room.code),
+    players: (room.players || []).filter((player) => !isPreviewBot(player)),
+    messages: (room.messages || []).filter((message) => !isPreviewBot(message)),
+  };
+
+  if (!cleanedRoom.players.some((player) => player.id === cleanedRoom.hostId && player.isActive)) {
+    const nextHost = cleanedRoom.players.find((player) => player.isActive && !player.isSpectator);
+    cleanedRoom.hostId = nextHost ? nextHost.id : null;
+  }
+
+  if (cleanedRoom.players.length === 0) {
+    cleanedRoom.phase = ROOM_PHASES.closed;
+  }
+
+  return cleanedRoom;
+}
+
 function joinRoom(room, player, { forceSpectator = false } = {}) {
   if (!room || room.phase === ROOM_PHASES.closed) {
     throw new Error("Room is not available.");
   }
 
-  const nextRoom = cloneRoom(room);
+  const nextRoom = cloneRoom(cleanRoom(room));
   const existingPlayer = findPlayer(nextRoom, player.id);
   const activePlayerCount = getActivePlayers(nextRoom).length;
   const joinsAsSpectator = forceSpectator || nextRoom.phase !== ROOM_PHASES.lobby || activePlayerCount >= MAX_ACTIVE_PLAYERS;
@@ -201,9 +245,62 @@ function createInviteLink(roomCode, baseUrl = window.location.href) {
   return url.toString();
 }
 
+class LocalRoomStorageAdapter {
+  get(roomCode) {
+    const code = normalizeRoomCode(roomCode);
+    const roomJson = window.localStorage.getItem(`${ROOM_STORAGE_PREFIX}${code}`);
+
+    return roomJson ? JSON.parse(roomJson) : null;
+  }
+
+  set(room) {
+    window.localStorage.setItem(`${ROOM_STORAGE_PREFIX}${room.code}`, JSON.stringify(room));
+    window.localStorage.setItem(`${ROOM_EVENT_PREFIX}${room.code}`, createRoomEventId());
+  }
+
+  remove(roomCode) {
+    const code = normalizeRoomCode(roomCode);
+
+    window.localStorage.removeItem(`${ROOM_STORAGE_PREFIX}${code}`);
+    window.localStorage.setItem(`${ROOM_EVENT_PREFIX}${code}`, createRoomEventId());
+  }
+
+  listCodes() {
+    const codes = [];
+
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+
+      if (key && key.startsWith(ROOM_STORAGE_PREFIX)) {
+        codes.push(key.replace(ROOM_STORAGE_PREFIX, ""));
+      }
+    }
+
+    return codes;
+  }
+
+  subscribe(roomCode, listener) {
+    const code = normalizeRoomCode(roomCode);
+    const eventKey = `${ROOM_EVENT_PREFIX}${code}`;
+
+    function handleStorageChange(event) {
+      if (event.key === eventKey) {
+        listener(code);
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }
+}
+
 class BlindfoldBrushRoomManager {
-  constructor() {
+  constructor({ storageAdapter = new LocalRoomStorageAdapter() } = {}) {
     this.rooms = new Map();
+    this.storageAdapter = storageAdapter;
   }
 
   create(hostPlayer) {
@@ -213,13 +310,13 @@ class BlindfoldBrushRoomManager {
 
   get(roomCode) {
     const code = normalizeRoomCode(roomCode);
-    const room = this.rooms.get(code) || this.loadRoom(code);
+    const room = cleanRoom(this.loadRoom(code) || this.rooms.get(code));
     return room ? cloneRoom(room) : null;
   }
 
   save(room) {
     const code = normalizeRoomCode(room.code);
-    const savedRoom = cloneRoom(room);
+    const savedRoom = cloneRoom(cleanRoom(room));
 
     this.rooms.set(code, savedRoom);
     this.saveRoom(savedRoom);
@@ -236,11 +333,17 @@ class BlindfoldBrushRoomManager {
   leave(roomCode, playerId) {
     const room = this.get(roomCode);
     const nextRoom = leaveRoom(room, playerId);
+
+    if (nextRoom.phase === ROOM_PHASES.closed) {
+      this.delete(roomCode);
+      return nextRoom;
+    }
+
     return this.save(nextRoom);
   }
 
   listCodes() {
-    const savedCodes = this.listSavedCodes();
+    const savedCodes = this.storageAdapter.listCodes();
 
     return [...new Set([...this.rooms.keys(), ...savedCodes])];
   }
@@ -249,14 +352,13 @@ class BlindfoldBrushRoomManager {
     const code = normalizeRoomCode(roomCode);
 
     try {
-      const roomJson = window.localStorage.getItem(`${ROOM_STORAGE_PREFIX}${code}`);
-      const room = roomJson ? JSON.parse(roomJson) : null;
+      const room = this.storageAdapter.get(code);
 
       if (room) {
-        this.rooms.set(code, room);
+        this.rooms.set(code, cleanRoom(room));
       }
 
-      return room;
+      return cleanRoom(room);
     } catch (error) {
       window.console.warn("Could not load room.", error);
       return null;
@@ -265,24 +367,28 @@ class BlindfoldBrushRoomManager {
 
   saveRoom(room) {
     try {
-      window.localStorage.setItem(`${ROOM_STORAGE_PREFIX}${room.code}`, JSON.stringify(room));
+      this.storageAdapter.set(room);
     } catch (error) {
       window.console.warn("Could not save room.", error);
     }
   }
 
-  listSavedCodes() {
-    const codes = [];
+  delete(roomCode) {
+    const code = normalizeRoomCode(roomCode);
 
-    for (let index = 0; index < window.localStorage.length; index += 1) {
-      const key = window.localStorage.key(index);
+    this.rooms.delete(code);
+    this.storageAdapter.remove(code);
+  }
 
-      if (key && key.startsWith(ROOM_STORAGE_PREFIX)) {
-        codes.push(key.replace(ROOM_STORAGE_PREFIX, ""));
-      }
+  subscribe(roomCode, listener) {
+    if (typeof this.storageAdapter.subscribe !== "function") {
+      return () => {};
     }
 
-    return codes;
+    return this.storageAdapter.subscribe(roomCode, () => {
+      const room = this.get(roomCode);
+      listener(room);
+    });
   }
 }
 
@@ -290,16 +396,21 @@ window.BlindfoldBrushRooms = {
   ROOM_CODE_LENGTH,
   MAX_ACTIVE_PLAYERS,
   MIN_ACTIVE_PLAYERS,
+  ROOM_EVENT_PREFIX,
   ROOM_STORAGE_PREFIX,
   ROOM_PHASES,
   BlindfoldBrushRoomManager,
+  LocalRoomStorageAdapter,
   canStartGame,
   createInviteLink,
+  createRoomEventId,
   createPlayerId,
   createRoom,
   createRoomCode,
+  cleanRoom,
   findPlayer,
   getActivePlayers,
+  isPreviewBot,
   joinRoom,
   leaveRoom,
   normalizeRoomCode,
