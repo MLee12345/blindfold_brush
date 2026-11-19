@@ -375,6 +375,17 @@ function installRuntimeStyles() {
       font: inherit;
     }
 
+    .bb-room-code {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid #c8d3e5;
+      border-radius: 6px;
+      background: #f4f7fb;
+      font-weight: 800;
+    }
+
     .bb-play-area {
       min-height: 0;
       display: grid;
@@ -527,15 +538,16 @@ function initializeRuntimeGame() {
   const roomBar = createElement("section", "bb-room-bar");
   const nicknameInput = createElement("input", "bb-room-input");
   const roomCodeInput = createElement("input", "bb-room-input");
+  const generatedRoomCode = createElement("span", "bb-room-code", "Room: ----");
   const createRoomButton = createElement("button", "", "Create Room");
   const joinRoomButton = createElement("button", "", "Join Room");
   const startGameButton = createElement("button", "", "Start Game");
   const addPlayerButton = createElement("button", "", "Add Test Player");
 
   nicknameInput.placeholder = "Nickname";
-  roomCodeInput.placeholder = "Room code";
+  roomCodeInput.placeholder = "Join code";
   startGameButton.disabled = true;
-  roomBar.append(nicknameInput, createRoomButton, roomCodeInput, joinRoomButton, addPlayerButton, startGameButton);
+  roomBar.append(nicknameInput, createRoomButton, generatedRoomCode, roomCodeInput, joinRoomButton, addPlayerButton, startGameButton);
 
   const playArea = createElement("section", "bb-play-area");
   const leaderboardPanel = createElement("aside", "bb-panel");
@@ -622,6 +634,17 @@ function initializeRuntimeGame() {
     return nicknameInput.value.trim() || "Player";
   }
 
+  function createRoomCode() {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+
+    for (let index = 0; index < 4; index += 1) {
+      code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+
+    return code;
+  }
+
   function createRoom() {
     if (roomCreated) {
       return;
@@ -633,6 +656,9 @@ function initializeRuntimeGame() {
       isActive: true,
     };
     roomCreated = true;
+    generatedRoomCode.textContent = `Room: ${createRoomCode()}`;
+    roomCodeInput.hidden = true;
+    joinRoomButton.hidden = true;
     game.addPlayer(currentPlayer);
     scoring.setPlayers([currentPlayer]);
     chat.messages = [];
@@ -646,8 +672,11 @@ function initializeRuntimeGame() {
   }
 
   function joinRoom() {
+    const joinCode = roomCodeInput.value.trim();
+
     createRoom();
-    hintText.textContent = `Joined room ${roomCodeInput.value.trim() || "LOCAL"}.`;
+    generatedRoomCode.textContent = `Room: ${joinCode || "LOCAL"}`;
+    hintText.textContent = `Joined room ${joinCode || "LOCAL"}.`;
   }
 
   function addTestPlayer() {
