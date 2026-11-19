@@ -8,106 +8,296 @@
   </head>
   <body>
     <main class="app">
-      <header class="game-header">
+      <section id="mainMenu" class="main-menu" aria-labelledby="mainTitle">
         <div>
-          <p class="eyebrow">Round 2 of 9</p>
-          <h1>Blindfold Brush</h1>
+          <p class="eyebrow">Private drawing rooms</p>
+          <h1 id="mainTitle">Blindfold Brush</h1>
+          <p>Create a room or join your friends with a four-letter code.</p>
         </div>
-        <div class="round-status" aria-label="Round timer">
-          <span>Artist: Maya</span>
-          <strong>00:24</strong>
-        </div>
-      </header>
 
-      <div class="gameplay-layout">
-        <aside class="panel leaderboard-panel" aria-labelledby="leaderboardTitle">
-          <div class="panel-heading">
-            <p class="eyebrow">Scores</p>
-            <h2 id="leaderboardTitle">Leaderboard</h2>
+        <div class="room-controls">
+          <label for="nicknameInput">Nickname</label>
+          <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
+
+          <label for="roomCodeInput">Room code</label>
+          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+
+          <div class="button-row">
+            <button id="createRoomButton" type="button">Create Room</button>
+            <button id="joinRoomButton" type="button">Join Room</button>
           </div>
 
-          <ol class="leaderboard-list">
-            <li class="leaderboard-player is-leading">
-              <span class="rank">1</span>
-              <span class="avatar" aria-hidden="true">MJ</span>
-              <span class="player-info">
-                <strong>Maya</strong>
-                <small>Artist</small>
-              </span>
-              <span class="score">420</span>
-            </li>
-            <li class="leaderboard-player">
-              <span class="rank">2</span>
-              <span class="avatar" aria-hidden="true">AL</span>
-              <span class="player-info">
-                <strong>Alex</strong>
-                <small>Guessed fast</small>
-              </span>
-              <span class="score">360</span>
-            </li>
-            <li class="leaderboard-player">
-              <span class="rank">3</span>
-              <span class="avatar" aria-hidden="true">SK</span>
-              <span class="player-info">
-                <strong>Sophia</strong>
-                <small>Ready</small>
-              </span>
-              <span class="score">290</span>
-            </li>
-          </ol>
-        </aside>
+          <p id="roomMessage" role="status"></p>
+        </div>
+      </section>
 
-        <section class="drawing-panel" aria-label="Drawing area">
-          <div class="prompt-card">
-            <p class="eyebrow">Guessing hint</p>
-            <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
+        <div>
+          <p class="eyebrow">Room code</p>
+          <h2 id="roomCodeTitle">----</h2>
+          <p id="roomStatus">Share this code so people can connect.</p>
+        </div>
+
+        <div>
+          <p class="eyebrow">Players</p>
+          <ul id="playerList"></ul>
+        </div>
+
+        <button id="leaveRoomButton" type="button">Leave Room</button>
+      </section>
+
+      <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
+        <header class="game-header">
+          <div>
+            <p class="eyebrow">Round 2 of 9</p>
+            <h2>Blindfold Brush</h2>
           </div>
+          <div class="round-status" aria-label="Round timer">
+            <span>Artist: Maya</span>
+            <strong>00:24</strong>
+          </div>
+        </header>
 
-          <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
-
-          <section class="toolbar" aria-label="Drawing tools">
-            <div class="controls">
-              <label for="brushColor">Color</label>
-              <input id="brushColor" type="color" value="#1f2937">
-
-              <label for="brushSize">Size</label>
-              <input id="brushSize" type="range" min="2" max="40" value="8">
-
-              <button id="clearCanvas" type="button">Clear</button>
+        <div class="gameplay-layout">
+          <aside class="panel leaderboard-panel" aria-labelledby="leaderboardTitle">
+            <div class="panel-heading">
+              <p class="eyebrow">Scores</p>
+              <h2 id="leaderboardTitle">Leaderboard</h2>
             </div>
+
+            <ol class="leaderboard-list">
+              <li class="leaderboard-player is-leading">
+                <span class="rank">1</span>
+                <span class="avatar" aria-hidden="true">MJ</span>
+                <span class="player-info">
+                  <strong>Maya</strong>
+                  <small>Artist</small>
+                </span>
+                <span class="score">420</span>
+              </li>
+              <li class="leaderboard-player">
+                <span class="rank">2</span>
+                <span class="avatar" aria-hidden="true">AL</span>
+                <span class="player-info">
+                  <strong>Alex</strong>
+                  <small>Guessed fast</small>
+                </span>
+                <span class="score">360</span>
+              </li>
+              <li class="leaderboard-player">
+                <span class="rank">3</span>
+                <span class="avatar" aria-hidden="true">SK</span>
+                <span class="player-info">
+                  <strong>Sophia</strong>
+                  <small>Ready</small>
+                </span>
+                <span class="score">290</span>
+              </li>
+            </ol>
+          </aside>
+
+          <section class="drawing-panel" aria-label="Drawing area">
+            <div class="prompt-card">
+              <p class="eyebrow">Guessing hint</p>
+              <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+            </div>
+
+            <div class="canvas-stage">
+              <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+            </div>
+
+            <section class="toolbar" aria-label="Drawing tools">
+              <div class="controls" role="toolbar" aria-label="Drawing tools">
+                <label for="brushColor">Color</label>
+                <input id="brushColor" type="color" value="#1f2937">
+
+                <div class="paint-supplies">
+                  <div class="color-palette" aria-label="Brush colors">
+                    <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
+                    <button class="color-swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
+                    <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
+                    <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
+                    <button class="color-swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e;" aria-label="Green"></button>
+                    <button class="color-swatch" type="button" data-color="#14b8a6" style="--swatch: #14b8a6;" aria-label="Teal"></button>
+                    <button class="color-swatch" type="button" data-color="#3b82f6" style="--swatch: #3b82f6;" aria-label="Blue"></button>
+                    <button class="color-swatch" type="button" data-color="#8b5cf6" style="--swatch: #8b5cf6;" aria-label="Violet"></button>
+                    <button class="color-swatch" type="button" data-color="#ec4899" style="--swatch: #ec4899;" aria-label="Pink"></button>
+                    <button class="color-swatch" type="button" data-color="#ffffff" style="--swatch: #ffffff;" aria-label="White"></button>
+                  </div>
+
+                  <div class="tool-group" aria-label="Tools">
+                    <button class="tool-button is-active" type="button" data-tool="pen" aria-label="Pen" aria-pressed="true">
+                      <img src="pen-icon.svg" alt="" draggable="false">
+                    </button>
+                    <button class="tool-button" type="button" data-tool="eraser" aria-label="Eraser" aria-pressed="false">
+                      <img src="eraser-icon.svg" alt="" draggable="false">
+                    </button>
+                  </div>
+                </div>
+
+                <label for="brushSize">Size</label>
+                <input id="brushSize" type="range" min="2" max="40" value="8">
+
+                <button id="undoCanvas" type="button">Undo</button>
+                <button id="clearCanvas" type="button">Clear</button>
+              </div>
+            </section>
           </section>
-        </section>
 
-        <aside class="panel chat-panel" aria-labelledby="chatTitle">
-          <div class="panel-heading">
-            <p class="eyebrow">Live guesses</p>
-            <h2 id="chatTitle">Chat</h2>
-          </div>
-
-          <div class="chat-messages" aria-live="polite">
-            <p class="chat-message">
-              <strong>Alex</strong>
-              Is it a sandwich?
-            </p>
-            <p class="chat-message system-message">
-              Sophia guessed correctly.
-            </p>
-            <p class="chat-message">
-              <strong>Jordan</strong>
-              Looks like a bicycle.
-            </p>
-          </div>
-
-          <form class="chat-form">
-            <label for="guessInput">Guess</label>
-            <div class="chat-input-row">
-              <input id="guessInput" type="text" placeholder="Type a guess">
-              <button type="submit">Send</button>
+          <aside class="panel chat-panel" aria-labelledby="chatTitle">
+            <div class="panel-heading">
+              <p class="eyebrow">Live guesses</p>
+              <h2 id="chatTitle">Chat</h2>
             </div>
-          </form>
-        </aside>
-      </div>
+
+            <div class="chat-messages" aria-live="polite">
+              <p class="chat-message">
+                <strong>Alex</strong>
+                Is it a sandwich?
+              </p>
+              <p class="chat-message system-message">
+                Sophia guessed correctly.
+              </p>
+              <p class="chat-message">
+                <strong>Jordan</strong>
+                Looks like a bicycle.
+              </p>
+            </div>
+
+            <form class="chat-form">
+              <label for="guessInput">Guess</label>
+              <div class="chat-input-row">
+                <input id="guessInput" type="text" placeholder="Type a guess">
+                <button type="submit">Send</button>
+              </div>
+            </form>
+          </aside>
+        </div>
+      </section>
     </main>
+
+    <script src="rooms.js"></script>
+    <script>
+      const roomApi = window.BlindfoldBrushRooms;
+      const mainMenu = document.querySelector("#mainMenu");
+      const roomLobby = document.querySelector("#roomLobby");
+      const gameArea = document.querySelector("#gameArea");
+      const nicknameInput = document.querySelector("#nicknameInput");
+      const roomCodeInput = document.querySelector("#roomCodeInput");
+      const createRoomButton = document.querySelector("#createRoomButton");
+      const joinRoomButton = document.querySelector("#joinRoomButton");
+      const leaveRoomButton = document.querySelector("#leaveRoomButton");
+      const roomMessage = document.querySelector("#roomMessage");
+      const roomCodeTitle = document.querySelector("#roomCodeTitle");
+      const roomStatus = document.querySelector("#roomStatus");
+      const playerList = document.querySelector("#playerList");
+      const currentRoomKey = "blindfold-brush-current-room";
+      const currentPlayerKey = "blindfold-brush-current-player";
+
+      let roomManager = null;
+      let currentPlayer = null;
+
+      function showRoomMessage(message) {
+        roomMessage.textContent = message;
+      }
+
+      function createLocalPlayer() {
+        const savedPlayer = window.localStorage.getItem(currentPlayerKey);
+
+        if (savedPlayer) {
+          return JSON.parse(savedPlayer);
+        }
+
+        return {
+          id: roomApi.createPlayerId(),
+          nickname: "Player",
+        };
+      }
+
+      function getCurrentPlayer() {
+        currentPlayer.nickname = nicknameInput.value.trim() || "Player";
+        window.localStorage.setItem(currentPlayerKey, JSON.stringify(currentPlayer));
+        return currentPlayer;
+      }
+
+      function renderRoom(room) {
+        mainMenu.hidden = true;
+        roomLobby.hidden = false;
+        gameArea.hidden = false;
+        roomCodeTitle.textContent = room.code;
+        roomStatus.textContent = room.hostId === currentPlayer.id
+          ? "Share this four-letter code so people can connect."
+          : "You joined the room.";
+        playerList.innerHTML = "";
+
+        room.players
+          .filter((player) => player.isActive)
+          .forEach((player) => {
+            const playerItem = document.createElement("li");
+            playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
+            playerList.append(playerItem);
+          });
+      }
+
+      function leaveCurrentRoom() {
+        const roomCode = window.localStorage.getItem(currentRoomKey);
+
+        if (roomCode) {
+          roomManager.leave(roomCode, currentPlayer.id);
+        }
+
+        window.localStorage.removeItem(currentRoomKey);
+        roomLobby.hidden = true;
+        gameArea.hidden = true;
+        mainMenu.hidden = false;
+      }
+
+      if (!roomApi) {
+        showRoomMessage("Room code helpers are not loaded yet.");
+      } else {
+        roomManager = new roomApi.BlindfoldBrushRoomManager();
+        currentPlayer = createLocalPlayer();
+        nicknameInput.value = currentPlayer.nickname;
+
+        roomCodeInput.addEventListener("input", () => {
+          roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value);
+        });
+
+        createRoomButton.addEventListener("click", () => {
+          const room = roomManager.create(getCurrentPlayer());
+          window.localStorage.setItem(currentRoomKey, room.code);
+          showRoomMessage("");
+          renderRoom(room);
+        });
+
+        joinRoomButton.addEventListener("click", () => {
+          const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
+
+          if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
+            showRoomMessage("Enter a four-letter room code.");
+            return;
+          }
+
+          try {
+            const room = roomManager.join(roomCode, getCurrentPlayer());
+            window.localStorage.setItem(currentRoomKey, room.code);
+            showRoomMessage("");
+            renderRoom(room);
+          } catch (error) {
+            showRoomMessage("Room not found. Check the code and try again.");
+          }
+        });
+
+        leaveRoomButton.addEventListener("click", leaveCurrentRoom);
+
+        const savedRoomCode = window.localStorage.getItem(currentRoomKey);
+        const savedRoom = savedRoomCode ? roomManager.get(savedRoomCode) : null;
+
+        if (savedRoom && savedRoom.players.some((player) => player.id === currentPlayer.id && player.isActive)) {
+          renderRoom(savedRoom);
+        }
+      }
+    </script>
 
     <script src="drawing.js"></script>
   </body>
