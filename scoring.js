@@ -10,7 +10,8 @@ function clampScore(value, min, max) {
 }
 
 function calculateGuessPoints(secondsRemaining) {
-  const safeSecondsRemaining = clampScore(secondsRemaining, 0, SCORING_SETTINGS.roundSeconds);
+  const numericSeconds = Number.isFinite(secondsRemaining) ? secondsRemaining : 0;
+  const safeSecondsRemaining = clampScore(numericSeconds, 0, SCORING_SETTINGS.roundSeconds);
   const speedPercent = safeSecondsRemaining / SCORING_SETTINGS.roundSeconds;
   const pointRange = SCORING_SETTINGS.maxGuessPoints - SCORING_SETTINGS.minGuessPoints;
 
@@ -32,6 +33,9 @@ class BlindfoldBrushScoring {
           playerName: player.name || player.nickname || "Player",
           totalPoints: 0,
         });
+      } else {
+        const playerScore = this.scores.get(player.id);
+        playerScore.playerName = player.name || player.nickname || playerScore.playerName;
       }
     });
   }
@@ -40,7 +44,7 @@ class BlindfoldBrushScoring {
     this.scores.delete(playerId);
   }
 
-  scoreRound({ artistId, correctGuesses, roundStartedAt, roundEndedAt }) {
+  scoreRound({ artistId, correctGuesses = [], roundStartedAt, roundEndedAt, prompt, reason }) {
     const roundPoints = [];
     const guessCount = correctGuesses.length;
     const artistPoints = guessCount * SCORING_SETTINGS.artistPointsPerCorrectGuess;
@@ -49,6 +53,7 @@ class BlindfoldBrushScoring {
       this.addPoints(artistId, artistPoints);
       roundPoints.push({
         playerId: artistId,
+        playerName: this.getPlayerName(artistId),
         role: "artist",
         points: artistPoints,
       });
@@ -58,18 +63,26 @@ class BlindfoldBrushScoring {
       const guessedAt = guess.guessedAt || roundEndedAt;
       const elapsedSeconds = Math.max(0, (guessedAt - roundStartedAt) / 1000);
       const secondsRemaining = SCORING_SETTINGS.roundSeconds - elapsedSeconds;
+      const safeSecondsRemaining = Number.isFinite(secondsRemaining)
+        ? clampScore(secondsRemaining, 0, SCORING_SETTINGS.roundSeconds)
+        : 0;
       const points = calculateGuessPoints(secondsRemaining);
 
       this.addPoints(guess.playerId, points);
       roundPoints.push({
         playerId: guess.playerId,
+        playerName: guess.playerName || this.getPlayerName(guess.playerId),
         role: "guesser",
         points,
+        guessedAt,
+        secondsRemaining: safeSecondsRemaining,
       });
     });
 
     const result = {
       artistId,
+      prompt,
+      reason,
       roundPoints,
       leaderboard: this.getLeaderboard(),
     };
@@ -90,6 +103,12 @@ class BlindfoldBrushScoring {
 
     const playerScore = this.scores.get(playerId);
     playerScore.totalPoints += points;
+  }
+
+  getPlayerName(playerId) {
+    const playerScore = this.scores.get(playerId);
+
+    return playerScore ? playerScore.playerName : "Player";
   }
 
   getLeaderboard() {
