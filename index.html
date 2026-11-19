@@ -54,7 +54,7 @@
           </div>
           <div class="round-status" aria-label="Round timer">
             <span>Artist: Maya</span>
-            <strong>00:24</strong>
+            <strong>00:30</strong>
           </div>
         </header>
 
@@ -164,7 +164,7 @@
               </p>
             </div>
 
-            <form class="chat-form">
+            <form id="chatForm" class="chat-form">
               <label for="guessInput">Guess</label>
               <div class="chat-input-row">
                 <input id="guessInput" type="text" placeholder="Type a guess">
@@ -191,11 +191,23 @@
       const roomCodeTitle = document.querySelector("#roomCodeTitle");
       const roomStatus = document.querySelector("#roomStatus");
       const playerList = document.querySelector("#playerList");
+      const chatForm = document.querySelector("#chatForm");
+      const chatMessages = document.querySelector(".chat-messages");
+      const guessInput = document.querySelector("#guessInput");
+      const scoreElements = document.querySelectorAll(".score");
+      const roundStatus = document.querySelector(".round-status");
+      const timerDisplay = document.querySelector(".round-status strong");
+      const clearCanvasButton = document.querySelector("#clearCanvas");
       const currentRoomKey = "blindfold-brush-current-room";
       const currentPlayerKey = "blindfold-brush-current-player";
+      const correctAnswer = "pizza planet";
+      const roundLengthSeconds = 30;
 
       let roomManager = null;
       let currentPlayer = null;
+      let localScore = 290;
+      let uiTimerId = null;
+      let roundSecondsRemaining = roundLengthSeconds;
 
       function showRoomMessage(message) {
         roomMessage.textContent = message;
@@ -237,6 +249,69 @@
             playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
             playerList.append(playerItem);
           });
+
+        clearCanvasButton.click();
+        startRoundTimer();
+      }
+
+      function appendChatMessage(playerName, message, { isSystem = false } = {}) {
+        const chatMessage = document.createElement("p");
+        chatMessage.className = isSystem ? "chat-message system-message" : "chat-message";
+
+        if (isSystem) {
+          chatMessage.textContent = message;
+        } else {
+          const playerLabel = document.createElement("strong");
+          playerLabel.textContent = playerName;
+          chatMessage.append(playerLabel, document.createTextNode(message));
+        }
+
+        chatMessages.append(chatMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function formatRoundTime(seconds) {
+        return `00:${String(Math.max(0, seconds)).padStart(2, "0")}`;
+      }
+
+      function updateRoundTimerDisplay(seconds) {
+        timerDisplay.textContent = formatRoundTime(seconds);
+        roundStatus.classList.toggle("is-low", seconds <= 5);
+      }
+
+      function stopRoundTimer() {
+        window.clearInterval(uiTimerId);
+        uiTimerId = null;
+      }
+
+      function startRoundTimer() {
+        stopRoundTimer();
+        roundSecondsRemaining = roundLengthSeconds;
+        updateRoundTimerDisplay(roundSecondsRemaining);
+
+        uiTimerId = window.setInterval(() => {
+          roundSecondsRemaining -= 1;
+          updateRoundTimerDisplay(roundSecondsRemaining);
+
+          if (roundSecondsRemaining <= 0) {
+            stopRoundTimer();
+            appendChatMessage("", "Time is up. The drawing is revealed.", { isSystem: true });
+          }
+        }, 1000);
+      }
+
+      function updateLocalScore(points) {
+        localScore += points;
+        const localScoreElement = scoreElements[2];
+
+        if (localScoreElement) {
+          localScoreElement.textContent = localScore;
+          localScoreElement.closest(".leaderboard-player").classList.add("score-bump");
+
+          window.setTimeout(() => {
+            localScoreElement.closest(".leaderboard-player").classList.remove("score-bump");
+          }, 550);
+        }
       }
 
       function leaveCurrentRoom() {
@@ -247,10 +322,30 @@
         }
 
         window.localStorage.removeItem(currentRoomKey);
+        stopRoundTimer();
         roomLobby.hidden = true;
         gameArea.hidden = true;
         mainMenu.hidden = false;
       }
+
+      chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const guess = guessInput.value.trim();
+
+        if (!guess) {
+          return;
+        }
+
+        const playerName = nicknameInput.value.trim() || "Player";
+        appendChatMessage(playerName, guess);
+        guessInput.value = "";
+
+        if (guess.toLowerCase() === correctAnswer) {
+          appendChatMessage("", `${playerName} guessed correctly.`, { isSystem: true });
+          updateLocalScore(80);
+        }
+      });
 
       if (!roomApi) {
         showRoomMessage("Room code helpers are not loaded yet.");
