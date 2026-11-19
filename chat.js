@@ -87,10 +87,19 @@ class BlindfoldBrushChat {
     this.onCorrectGuess = onCorrectGuess;
   }
 
-  startRound({ answer, artistId, startedAt = Date.now() }) {
+  reset() {
     this.messages = [];
     this.hiddenCorrectGuesses = [];
     this.correctGuessPlayerIds = [];
+    this.currentAnswer = "";
+    this.currentArtistId = null;
+    this.revealIndexes = [];
+    this.roundStartedAt = null;
+    this.isDrawingRoundActive = false;
+  }
+
+  startRound({ answer, artistId, startedAt = Date.now() }) {
+    this.reset();
     this.currentAnswer = answer;
     this.currentArtistId = artistId;
     this.revealIndexes = getRandomLetterIndexes(answer);
