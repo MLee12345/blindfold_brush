@@ -361,7 +361,8 @@ function installRuntimeStyles() {
     }
 
     .bb-room-bar[hidden],
-    .bb-round-info[hidden] {
+    .bb-round-info[hidden],
+    .bb-prompt-picker[hidden] {
       display: none;
     }
 
@@ -465,6 +466,27 @@ function installRuntimeStyles() {
       font-weight: 700;
     }
 
+    .bb-prompt-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border: 1px solid #d7dfdd;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .bb-prompt-button {
+      min-height: 34px;
+      border-radius: 6px;
+      background: #8b5cf6;
+    }
+
+    .bb-prompt-button:hover {
+      background: #7c3aed;
+    }
+
     .bb-center-column {
       min-width: 0;
       min-height: 0;
@@ -523,6 +545,7 @@ function initializeRuntimeGame() {
   const roundInfo = createElement("div", "bb-round-info");
   const hintText = createElement("span", "bb-hint-text", "Create a room to start.");
   const timerText = createElement("span", "bb-timer-text", "");
+  const promptPicker = createElement("div", "bb-prompt-picker");
   const chatPanel = createElement("aside", "bb-panel bb-chat-panel");
   const chatTitle = createElement("h2", "bb-panel-title", "Chat");
   const chatMessages = createElement("ul", "bb-chat-messages");
@@ -531,6 +554,7 @@ function initializeRuntimeGame() {
   const chatButton = createElement("button", "", "Send");
 
   roundInfo.hidden = true;
+  promptPicker.hidden = true;
   chatInput.placeholder = "Type a guess";
   chatInput.disabled = true;
   chatButton.disabled = true;
@@ -538,7 +562,7 @@ function initializeRuntimeGame() {
   leaderboardPanel.append(leaderboardTitle, leaderboardList);
   chatForm.append(chatInput, chatButton);
   chatPanel.append(chatTitle, chatMessages, chatForm);
-  centerColumn.append(roundInfo, canvasStage);
+  centerColumn.append(roundInfo, promptPicker, canvasStage);
   playArea.append(leaderboardPanel, centerColumn, chatPanel);
   toolbar.after(roomBar);
   roomBar.after(playArea);
@@ -562,7 +586,11 @@ function initializeRuntimeGame() {
       updateTimer(secondsRemaining);
       updateHint(state);
     },
+    onPromptOptions: (artistId, promptOptions) => {
+      renderPromptOptions(artistId, promptOptions);
+    },
     onRoundStart: (state) => {
+      promptPicker.hidden = true;
       chat.startRound({
         answer: state.currentPrompt,
         artistId: state.currentArtistId,
@@ -677,7 +705,9 @@ function initializeRuntimeGame() {
 
     if (state.phase === "prompt-selection") {
       const artistName = getPlayerName(state.currentArtistId);
-      hintText.textContent = `${artistName} is choosing a prompt.`;
+      hintText.textContent = state.currentArtistId === localPlayerId
+        ? "Choose one prompt to draw."
+        : `${artistName} is choosing a prompt.`;
       return;
     }
 
@@ -708,6 +738,28 @@ function initializeRuntimeGame() {
       : "No points this round.";
 
     chat.addSystemMessage(`Round over. ${summary}`);
+  }
+
+  function renderPromptOptions(artistId, promptOptions) {
+    promptPicker.replaceChildren();
+
+    if (artistId !== localPlayerId) {
+      promptPicker.hidden = true;
+      return;
+    }
+
+    promptOptions.forEach((prompt) => {
+      const button = createElement("button", "bb-prompt-button", prompt);
+
+      button.type = "button";
+      button.addEventListener("click", () => {
+        promptPicker.hidden = true;
+        game.choosePrompt(prompt);
+      });
+      promptPicker.append(button);
+    });
+
+    promptPicker.hidden = false;
   }
 
   function renderLeaderboard() {
