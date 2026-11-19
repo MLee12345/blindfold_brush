@@ -8,24 +8,184 @@
   </head>
   <body>
     <main class="app">
-      <section class="toolbar" aria-label="Drawing tools">
+      <section id="mainMenu" class="main-menu" aria-labelledby="mainTitle">
         <div>
-          <h1>Blindfold Brush</h1>
-          <p>A three-person drawing app project.</p>
+          <h1 id="mainTitle">Blindfold Brush</h1>
+          <p>Create a room or join your friends with a four-letter code.</p>
         </div>
-        <div class="controls">
-          <label for="brushColor">Color</label>
-          <input id="brushColor" type="color" value="#1f2937">
 
-          <label for="brushSize">Size</label>
-          <input id="brushSize" type="range" min="2" max="40" value="8">
+        <div class="room-controls">
+          <label for="nicknameInput">Nickname</label>
+          <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
 
-          <button id="clearCanvas" type="button">Clear</button>
+          <button id="createRoomButton" type="button">Create Room</button>
+
+          <label for="roomCodeInput">Room Code</label>
+          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+          <button id="joinRoomButton" type="button">Join Room</button>
+
+          <p id="roomMessage" role="status" aria-live="polite"></p>
         </div>
       </section>
 
-      <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
+        <div>
+          <p>Room Code</p>
+          <h2 id="roomCodeTitle">----</h2>
+          <p id="roomStatus">Share this code so people can connect.</p>
+        </div>
+
+        <div>
+          <h3>Players</h3>
+          <ul id="playerList"></ul>
+        </div>
+
+        <button id="leaveRoomButton" type="button">Leave Room</button>
+      </section>
+
+      <section id="gameArea" hidden>
+        <section class="toolbar" aria-label="Drawing tools">
+          <div>
+            <h1>Blindfold Brush</h1>
+            <p>A three-person drawing app project.</p>
+          </div>
+          <div class="controls">
+            <label for="brushColor">Color</label>
+            <input id="brushColor" type="color" value="#1f2937">
+
+            <label for="brushSize">Size</label>
+            <input id="brushSize" type="range" min="2" max="40" value="8">
+
+            <button id="clearCanvas" type="button">Clear</button>
+          </div>
+        </section>
+
+        <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+      </section>
     </main>
+
+    <script src="rooms.js"></script>
+    <script>
+      const roomApi = window.BlindfoldBrushRooms;
+      const mainMenu = document.querySelector("#mainMenu");
+      const roomLobby = document.querySelector("#roomLobby");
+      const gameArea = document.querySelector("#gameArea");
+      const nicknameInput = document.querySelector("#nicknameInput");
+      const roomCodeInput = document.querySelector("#roomCodeInput");
+      const createRoomButton = document.querySelector("#createRoomButton");
+      const joinRoomButton = document.querySelector("#joinRoomButton");
+      const leaveRoomButton = document.querySelector("#leaveRoomButton");
+      const roomMessage = document.querySelector("#roomMessage");
+      const roomCodeTitle = document.querySelector("#roomCodeTitle");
+      const roomStatus = document.querySelector("#roomStatus");
+      const playerList = document.querySelector("#playerList");
+      const currentRoomKey = "blindfold-brush-current-room";
+      const currentPlayerKey = "blindfold-brush-current-player";
+
+      let roomManager = null;
+      let currentPlayer = null;
+
+      function showRoomMessage(message) {
+        roomMessage.textContent = message;
+      }
+
+      function createLocalPlayer() {
+        const savedPlayer = window.localStorage.getItem(currentPlayerKey);
+
+        if (savedPlayer) {
+          return JSON.parse(savedPlayer);
+        }
+
+        return {
+          id: roomApi.createPlayerId(),
+          nickname: "Player",
+        };
+      }
+
+      function getCurrentPlayer() {
+        currentPlayer.nickname = nicknameInput.value.trim() || "Player";
+        window.localStorage.setItem(currentPlayerKey, JSON.stringify(currentPlayer));
+        return currentPlayer;
+      }
+
+      function renderRoom(room) {
+        mainMenu.hidden = true;
+        roomLobby.hidden = false;
+        gameArea.hidden = false;
+        roomCodeTitle.textContent = room.code;
+        roomStatus.textContent = room.hostId === currentPlayer.id
+          ? "Share this four-letter code so people can connect."
+          : "You joined the room.";
+        playerList.innerHTML = "";
+
+        room.players
+          .filter((player) => player.isActive)
+          .forEach((player) => {
+            const playerItem = document.createElement("li");
+            playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
+            playerList.append(playerItem);
+          });
+      }
+
+      function leaveCurrentRoom() {
+        const roomCode = window.localStorage.getItem(currentRoomKey);
+
+        if (roomCode) {
+          roomManager.leave(roomCode, currentPlayer.id);
+        }
+
+        window.localStorage.removeItem(currentRoomKey);
+        roomLobby.hidden = true;
+        gameArea.hidden = true;
+        mainMenu.hidden = false;
+      }
+
+      if (!roomApi) {
+        showRoomMessage("Room code helpers are not loaded yet.");
+      } else {
+        roomManager = new roomApi.BlindfoldBrushRoomManager();
+        currentPlayer = createLocalPlayer();
+        nicknameInput.value = currentPlayer.nickname;
+
+        roomCodeInput.addEventListener("input", () => {
+          roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value);
+        });
+
+        createRoomButton.addEventListener("click", () => {
+          const room = roomManager.create(getCurrentPlayer());
+          window.localStorage.setItem(currentRoomKey, room.code);
+          showRoomMessage("");
+          renderRoom(room);
+        });
+
+        joinRoomButton.addEventListener("click", () => {
+          const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
+
+          if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
+            showRoomMessage("Enter a four-letter room code.");
+            return;
+          }
+
+          try {
+            const room = roomManager.join(roomCode, getCurrentPlayer());
+            window.localStorage.setItem(currentRoomKey, room.code);
+            showRoomMessage("");
+            renderRoom(room);
+          } catch (error) {
+            showRoomMessage("Room not found. Check the code and try again.");
+          }
+        });
+
+        leaveRoomButton.addEventListener("click", leaveCurrentRoom);
+
+        const savedRoomCode = window.localStorage.getItem(currentRoomKey);
+        const savedRoom = savedRoomCode ? roomManager.get(savedRoomCode) : null;
+
+        if (savedRoom && savedRoom.players.some((player) => player.id === currentPlayer.id && player.isActive)) {
+          renderRoom(savedRoom);
+        }
+      }
+    </script>
 
     <script src="drawing.js"></script>
   </body>
