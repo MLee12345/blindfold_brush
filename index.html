@@ -8,20 +8,105 @@
   </head>
   <body>
     <main class="app">
-      <section class="toolbar" aria-label="Drawing tools">
-        <h1>Blindfold Brush</h1>
-        <div class="controls">
-          <label for="brushColor">Color</label>
-          <input id="brushColor" type="color" value="#1f2937">
-
-          <label for="brushSize">Size</label>
-          <input id="brushSize" type="range" min="2" max="40" value="8">
-
-          <button id="clearCanvas" type="button">Clear</button>
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">Round 2 of 9</p>
+          <h1>Blindfold Brush</h1>
         </div>
-      </section>
+        <div class="round-status" aria-label="Round timer">
+          <span>Artist: Maya</span>
+          <strong>00:24</strong>
+        </div>
+      </header>
 
-      <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+      <div class="gameplay-layout">
+        <aside class="panel leaderboard-panel" aria-labelledby="leaderboardTitle">
+          <div class="panel-heading">
+            <p class="eyebrow">Scores</p>
+            <h2 id="leaderboardTitle">Leaderboard</h2>
+          </div>
+
+          <ol class="leaderboard-list">
+            <li class="leaderboard-player is-leading">
+              <span class="rank">1</span>
+              <span class="avatar" aria-hidden="true">MJ</span>
+              <span class="player-info">
+                <strong>Maya</strong>
+                <small>Artist</small>
+              </span>
+              <span class="score">420</span>
+            </li>
+            <li class="leaderboard-player">
+              <span class="rank">2</span>
+              <span class="avatar" aria-hidden="true">AL</span>
+              <span class="player-info">
+                <strong>Alex</strong>
+                <small>Guessed fast</small>
+              </span>
+              <span class="score">360</span>
+            </li>
+            <li class="leaderboard-player">
+              <span class="rank">3</span>
+              <span class="avatar" aria-hidden="true">SK</span>
+              <span class="player-info">
+                <strong>Sophia</strong>
+                <small>Ready</small>
+              </span>
+              <span class="score">290</span>
+            </li>
+          </ol>
+        </aside>
+
+        <section class="drawing-panel" aria-label="Drawing area">
+          <div class="prompt-card">
+            <p class="eyebrow">Guessing hint</p>
+            <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+          </div>
+
+          <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+
+          <section class="toolbar" aria-label="Drawing tools">
+            <div class="controls">
+              <label for="brushColor">Color</label>
+              <input id="brushColor" type="color" value="#1f2937">
+
+              <label for="brushSize">Size</label>
+              <input id="brushSize" type="range" min="2" max="40" value="8">
+
+              <button id="clearCanvas" type="button">Clear</button>
+            </div>
+          </section>
+        </section>
+
+        <aside class="panel chat-panel" aria-labelledby="chatTitle">
+          <div class="panel-heading">
+            <p class="eyebrow">Live guesses</p>
+            <h2 id="chatTitle">Chat</h2>
+          </div>
+
+          <div class="chat-messages" aria-live="polite">
+            <p class="chat-message">
+              <strong>Alex</strong>
+              Is it a sandwich?
+            </p>
+            <p class="chat-message system-message">
+              Sophia guessed correctly.
+            </p>
+            <p class="chat-message">
+              <strong>Jordan</strong>
+              Looks like a bicycle.
+            </p>
+          </div>
+
+          <form class="chat-form">
+            <label for="guessInput">Guess</label>
+            <div class="chat-input-row">
+              <input id="guessInput" type="text" placeholder="Type a guess">
+              <button type="submit">Send</button>
+            </div>
+          </form>
+        </aside>
+      </div>
     </main>
 
     <script src="drawing.js"></script>
