@@ -53,7 +53,7 @@
             <h2>Blindfold Brush</h2>
           </div>
           <div class="round-status" aria-label="Round timer">
-            <span>Artist: Maya</span>
+            <span>Artist: Waiting</span>
             <strong>00:30</strong>
           </div>
         </header>
@@ -65,35 +65,7 @@
               <h2 id="leaderboardTitle">Leaderboard</h2>
             </div>
 
-            <ol class="leaderboard-list">
-              <li class="leaderboard-player is-leading">
-                <span class="rank">1</span>
-                <span class="avatar" aria-hidden="true">MJ</span>
-                <span class="player-info">
-                  <strong>Maya</strong>
-                  <small>Artist</small>
-                </span>
-                <span class="score">420</span>
-              </li>
-              <li class="leaderboard-player">
-                <span class="rank">2</span>
-                <span class="avatar" aria-hidden="true">AL</span>
-                <span class="player-info">
-                  <strong>Alex</strong>
-                  <small>Guessed fast</small>
-                </span>
-                <span class="score">360</span>
-              </li>
-              <li class="leaderboard-player">
-                <span class="rank">3</span>
-                <span class="avatar" aria-hidden="true">SK</span>
-                <span class="player-info">
-                  <strong>Sophia</strong>
-                  <small>Ready</small>
-                </span>
-                <span class="score">290</span>
-              </li>
-            </ol>
+            <ol class="leaderboard-list"></ol>
           </aside>
 
           <section class="drawing-panel" aria-label="Drawing area">
@@ -150,19 +122,7 @@
               <h2 id="chatTitle">Chat</h2>
             </div>
 
-            <div class="chat-messages" aria-live="polite">
-              <p class="chat-message">
-                <strong>Alex</strong>
-                Is it a sandwich?
-              </p>
-              <p class="chat-message system-message">
-                Sophia guessed correctly.
-              </p>
-              <p class="chat-message">
-                <strong>Jordan</strong>
-                Looks like a bicycle.
-              </p>
-            </div>
+            <div class="chat-messages" aria-live="polite"></div>
 
             <form id="chatForm" class="chat-form">
               <label for="guessInput">Guess</label>
@@ -194,10 +154,11 @@
       const chatForm = document.querySelector("#chatForm");
       const chatMessages = document.querySelector(".chat-messages");
       const guessInput = document.querySelector("#guessInput");
-      const scoreElements = document.querySelectorAll(".score");
       const roundStatus = document.querySelector(".round-status");
+      const artistLabel = document.querySelector(".round-status span");
       const timerDisplay = document.querySelector(".round-status strong");
       const clearCanvasButton = document.querySelector("#clearCanvas");
+      const leaderboardList = document.querySelector(".leaderboard-list");
       const currentRoomKey = "blindfold-brush-current-room";
       const currentPlayerKey = "blindfold-brush-current-player";
       const correctAnswer = "pizza planet";
@@ -205,9 +166,11 @@
 
       let roomManager = null;
       let currentPlayer = null;
-      let localScore = 290;
+      let activeRoom = null;
+      let localScore = 0;
       let uiTimerId = null;
       let roundSecondsRemaining = roundLengthSeconds;
+      const playerScores = new Map();
 
       function showRoomMessage(message) {
         roomMessage.textContent = message;
@@ -232,9 +195,72 @@
         return currentPlayer;
       }
 
+      function getInitials(name) {
+        return name
+          .trim()
+          .split(/\s+/)
+          .map((part) => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "P";
+      }
+
+      function renderLeaderboard(room, { highlightedPlayerId = null } = {}) {
+        const activePlayers = room.players.filter((player) => player.isActive);
+        const rankedPlayers = [...activePlayers];
+
+        activePlayers.forEach((player) => {
+          if (!playerScores.has(player.id)) {
+            playerScores.set(player.id, 0);
+          }
+        });
+
+        rankedPlayers.sort((firstPlayer, secondPlayer) => {
+          return playerScores.get(secondPlayer.id) - playerScores.get(firstPlayer.id);
+        });
+
+        leaderboardList.innerHTML = "";
+
+        rankedPlayers.forEach((player, index) => {
+          const playerItem = document.createElement("li");
+          const rank = document.createElement("span");
+          const avatar = document.createElement("span");
+          const playerInfo = document.createElement("span");
+          const playerName = document.createElement("strong");
+          const playerState = document.createElement("small");
+          const score = document.createElement("span");
+
+          playerItem.className = `leaderboard-player${index === 0 ? " is-leading" : ""}`;
+          playerItem.dataset.playerId = player.id;
+
+          if (player.id === highlightedPlayerId) {
+            playerItem.classList.add("score-bump");
+          }
+
+          rank.className = "rank";
+          rank.textContent = String(index + 1);
+          avatar.className = "avatar";
+          avatar.setAttribute("aria-hidden", "true");
+          avatar.textContent = getInitials(player.nickname);
+          playerInfo.className = "player-info";
+          playerName.textContent = player.nickname;
+          playerState.textContent = player.id === room.hostId ? "Host" : "Ready";
+          score.className = "score";
+          score.textContent = String(playerScores.get(player.id));
+
+          playerInfo.append(playerName, playerState);
+          playerItem.append(rank, avatar, playerInfo, score);
+          leaderboardList.append(playerItem);
+        });
+
+        const artist = activePlayers.find((player) => player.id === room.hostId) || activePlayers[0];
+        artistLabel.textContent = `Artist: ${artist ? artist.nickname : "Waiting"}`;
+      }
+
       function renderRoom(room) {
+        activeRoom = room;
         mainMenu.hidden = true;
-        roomLobby.hidden = false;
+        roomLobby.hidden = true;
         gameArea.hidden = false;
         roomCodeTitle.textContent = room.code;
         roomStatus.textContent = room.hostId === currentPlayer.id
@@ -250,6 +276,7 @@
             playerList.append(playerItem);
           });
 
+        renderLeaderboard(room);
         clearCanvasButton.click();
         startRoundTimer();
       }
@@ -301,15 +328,17 @@
       }
 
       function updateLocalScore(points) {
-        localScore += points;
-        const localScoreElement = scoreElements[2];
+        const currentScore = playerScores.get(currentPlayer.id) || localScore;
 
-        if (localScoreElement) {
-          localScoreElement.textContent = localScore;
-          localScoreElement.closest(".leaderboard-player").classList.add("score-bump");
+        localScore = currentScore + points;
+        playerScores.set(currentPlayer.id, localScore);
+
+        if (activeRoom) {
+          renderLeaderboard(activeRoom, { highlightedPlayerId: currentPlayer.id });
 
           window.setTimeout(() => {
-            localScoreElement.closest(".leaderboard-player").classList.remove("score-bump");
+            const currentPlayerScore = leaderboardList.querySelector(`[data-player-id="${currentPlayer.id}"]`);
+            currentPlayerScore?.classList.remove("score-bump");
           }, 550);
         }
       }
@@ -322,6 +351,7 @@
         }
 
         window.localStorage.removeItem(currentRoomKey);
+        activeRoom = null;
         stopRoundTimer();
         roomLobby.hidden = true;
         gameArea.hidden = true;
