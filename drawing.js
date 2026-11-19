@@ -110,11 +110,13 @@ function renderCanvasView() {
 
   if (isRoundRevealed) {
     context.drawImage(hiddenCanvas, 0, 0);
-  } else {
-    drawGrid();
+    return;
   }
 
-  drawCursor();
+  if (canUseDrawingTools) {
+    drawGrid();
+    drawCursor();
+  }
 }
 
 function revealDrawing() {
@@ -262,7 +264,7 @@ function selectColor(color) {
 }
 
 function moveCursor(event) {
-  if (isDrawing) {
+  if (isDrawing || !canUseDrawingTools || isRoundRevealed) {
     return;
   }
 
@@ -281,6 +283,7 @@ function hideCursor() {
 
 function setDrawingToolsAvailable(isAvailable) {
   canUseDrawingTools = isAvailable;
+  cursorPoint = null;
 
   if (!isAvailable) {
     isDrawing = false;
@@ -290,6 +293,7 @@ function setDrawingToolsAvailable(isAvailable) {
   }
 
   document.querySelector(".controls").hidden = !isAvailable;
+  renderCanvasView();
 }
 
 resizeHiddenCanvas();
@@ -418,6 +422,12 @@ function installRuntimeStyles() {
       list-style: none;
     }
 
+    .bb-leaderboard-list {
+      align-content: start;
+      align-items: start;
+      justify-items: start;
+    }
+
     .bb-leaderboard-row {
       display: inline-flex;
       align-items: center;
@@ -425,10 +435,19 @@ function installRuntimeStyles() {
       gap: 8px;
       width: fit-content;
       max-width: 100%;
-      padding: 6px 8px;
+      padding: 0 8px;
       border-radius: 6px;
       background: #f4f7fb;
+      font-family: inherit;
       font-size: 14px;
+      font-weight: 400;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .bb-leaderboard-row strong {
+      font: inherit;
+      font-weight: 400;
     }
 
     .bb-chat-panel {
@@ -594,6 +613,7 @@ function initializeRuntimeGame() {
       latestGameState = state;
       updateDrawingRole(state);
       updateRoundInfo(state);
+      resetChatIfRoomEmpty(state);
       renderLeaderboard();
     },
     onTimerTick: ({ state, secondsRemaining }) => {
@@ -664,14 +684,15 @@ function initializeRuntimeGame() {
     joinRoomButton.hidden = true;
     game.addPlayer(currentPlayer);
     scoring.setPlayers([currentPlayer]);
-    chat.messages = [];
+    chat.reset();
     renderChat();
     renderLeaderboard();
     chatInput.disabled = false;
     chatButton.disabled = false;
     startGameButton.disabled = game.getState().activePlayers.length < 2;
     hintText.textContent = "Room created. Waiting for players.";
-    roundInfo.hidden = false;
+    timerText.textContent = "";
+    roundInfo.hidden = true;
   }
 
   function joinRoom() {
@@ -720,8 +741,29 @@ function initializeRuntimeGame() {
       return;
     }
 
-    roundInfo.hidden = false;
+    const shouldShowRoundInfo = ["prompt-selection", "drawing", "results", "complete"].includes(state.phase);
+
+    roundInfo.hidden = !shouldShowRoundInfo;
+
+    if (!shouldShowRoundInfo) {
+      timerText.textContent = "";
+      return;
+    }
+
     updateHint(state);
+  }
+
+  function resetChatIfRoomEmpty(state) {
+    if (!roomCreated || state.activePlayers.length > 0) {
+      return;
+    }
+
+    chat.reset();
+    renderChat();
+    chatInput.disabled = true;
+    chatButton.disabled = true;
+    timerText.textContent = "";
+    roundInfo.hidden = true;
   }
 
   function updateTimer(secondsRemaining) {
@@ -872,6 +914,20 @@ function initializeRuntimeGame() {
       game.addPlayer(player);
       scoring.setPlayers(game.getState().players);
       startGameButton.disabled = game.getState().activePlayers.length < 2;
+      renderLeaderboard();
+    },
+    removePlayer: (playerId) => {
+      game.removePlayer(playerId);
+      scoring.removePlayer(playerId);
+
+      if (currentPlayer && currentPlayer.id === playerId) {
+        currentPlayer = null;
+      }
+
+      const state = game.getState();
+
+      startGameButton.disabled = state.activePlayers.length < 2;
+      resetChatIfRoomEmpty(state);
       renderLeaderboard();
     },
     renderLeaderboard,
