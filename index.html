@@ -29,6 +29,7 @@
             <div class="join-code-row">
               <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
               <button id="confirmJoinRoomButton" type="button">Enter</button>
+              <button id="cancelJoinRoomButton" class="secondary-button" type="button">Back</button>
             </div>
           </div>
 
@@ -161,6 +162,7 @@
       const joinRoomButton = document.querySelector("#joinRoomButton");
       const joinRoomPanel = document.querySelector("#joinRoomPanel");
       const confirmJoinRoomButton = document.querySelector("#confirmJoinRoomButton");
+      const cancelJoinRoomButton = document.querySelector("#cancelJoinRoomButton");
       const leaveRoomButton = document.querySelector("#leaveRoomButton");
       const roomMessage = document.querySelector("#roomMessage");
       const roomCodeTitle = document.querySelector("#roomCodeTitle");
@@ -193,12 +195,14 @@
       }
 
       function showJoinRoomPanel() {
+        mainMenu.classList.add("is-joining");
         joinRoomPanel.hidden = false;
         showRoomMessage("");
         roomCodeInput.focus();
       }
 
       function hideJoinRoomPanel() {
+        mainMenu.classList.remove("is-joining");
         joinRoomPanel.hidden = true;
         roomCodeInput.value = "";
       }
@@ -222,16 +226,6 @@
         return currentPlayer;
       }
 
-      function getInitials(name) {
-        return name
-          .trim()
-          .split(/\s+/)
-          .map((part) => part[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase() || "P";
-      }
-
       function renderLeaderboard(room, { highlightedPlayerId = null } = {}) {
         const activePlayers = room.players.filter((player) => player.isActive);
         const rankedPlayers = [...activePlayers];
@@ -250,12 +244,8 @@
 
         rankedPlayers.forEach((player, index) => {
           const playerItem = document.createElement("li");
-          const rank = document.createElement("span");
-          const avatar = document.createElement("span");
           const playerInfo = document.createElement("span");
           const playerName = document.createElement("strong");
-          const playerState = document.createElement("small");
-          const score = document.createElement("span");
 
           playerItem.className = `leaderboard-player${index === 0 ? " is-leading" : ""}`;
           playerItem.dataset.playerId = player.id;
@@ -264,19 +254,11 @@
             playerItem.classList.add("score-bump");
           }
 
-          rank.className = "rank";
-          rank.textContent = String(index + 1);
-          avatar.className = "avatar";
-          avatar.setAttribute("aria-hidden", "true");
-          avatar.textContent = getInitials(player.nickname);
           playerInfo.className = "player-info";
           playerName.textContent = player.nickname;
-          playerState.textContent = player.id === room.hostId ? "Host" : "Ready";
-          score.className = "score";
-          score.textContent = String(playerScores.get(player.id));
 
-          playerInfo.append(playerName, playerState);
-          playerItem.append(rank, avatar, playerInfo, score);
+          playerInfo.append(playerName);
+          playerItem.append(playerInfo);
           leaderboardList.append(playerItem);
         });
 
@@ -449,6 +431,11 @@
 
         confirmJoinRoomButton.addEventListener("click", () => {
           joinRequestedRoom();
+        });
+
+        cancelJoinRoomButton.addEventListener("click", () => {
+          hideJoinRoomPanel();
+          showRoomMessage("");
         });
 
         roomCodeInput.addEventListener("keydown", (event) => {
