@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Pen icon">
+  <g transform="rotate(28 12 12)">
+    <path fill="#f59e0b" d="M10 2.8C10 1.8 10.8 1 11.8 1H12.2C13.2 1 14 1.8 14 2.8V15.5H10V2.8Z"/>
+    <path fill="#fcd34d" d="M10 2.8C10 1.8 10.8 1 11.8 1H12.2C13.2 1 14 1.8 14 2.8V5H10V2.8Z"/>
+    <path fill="#1f2937" d="M10 15.5H14L12 22.3 10 15.5Z"/>
+    <path fill="#f8fafc" d="M10.7 15.5H13.3L12 19.7 10.7 15.5Z"/>
+  </g>
+</svg>

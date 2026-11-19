@@ -1,8 +1,10 @@
 const canvas = document.querySelector("#drawingCanvas");
 const context = canvas.getContext("2d");
-const colorInput = document.querySelector("#brushColor");
 const sizeInput = document.querySelector("#brushSize");
 const clearButton = document.querySelector("#clearCanvas");
+const undoButton = document.querySelector("#undoCanvas");
+const toolButtons = document.querySelectorAll("[data-tool]");
+const colorButtons = document.querySelectorAll("[data-color]");
 
 const hiddenCanvas = document.createElement("canvas");
 const hiddenContext = hiddenCanvas.getContext("2d");
@@ -16,6 +18,8 @@ let activePointerId = null;
 let cursorPoint = null;
 let isRoundRevealed = false;
 let roundTimer = null;
+let selectedTool = "pen";
+let selectedColor = "#1f2937";
 
 function resizeHiddenCanvas() {
   hiddenCanvas.width = canvas.width;
@@ -43,13 +47,14 @@ function getCanvasPoint(event) {
 
 function setBrushStyle(event) {
   const pressure = event.pointerType === "pen" && event.pressure > 0 ? event.pressure : 1;
+  const isErasing = selectedTool === "eraser" || event.shiftKey;
 
   hiddenContext.lineWidth = Math.max(1, Number(sizeInput.value) * pressure);
   hiddenContext.lineCap = "round";
   hiddenContext.lineJoin = "round";
-  hiddenContext.strokeStyle = colorInput.value;
-  hiddenContext.fillStyle = colorInput.value;
-  hiddenContext.globalCompositeOperation = event.shiftKey ? "destination-out" : "source-over";
+  hiddenContext.strokeStyle = selectedColor;
+  hiddenContext.fillStyle = selectedColor;
+  hiddenContext.globalCompositeOperation = isErasing ? "destination-out" : "source-over";
 }
 
 function clearVisibleCanvas() {
@@ -85,24 +90,29 @@ function drawCursor() {
   }
 
   const cursorRadius = Math.max(4, Number(sizeInput.value) / 2);
+  const isErasing = selectedTool === "eraser";
 
   context.save();
-  context.strokeStyle = colorInput.value;
+  context.globalAlpha = isErasing ? 0.9 : 0.75;
+  context.fillStyle = isErasing ? "#ffffff" : selectedColor;
+  context.strokeStyle = isErasing ? "#667085" : selectedColor;
   context.lineWidth = 2;
-  context.setLineDash([5, 5]);
   context.beginPath();
   context.arc(cursorPoint.x, cursorPoint.y, cursorRadius, 0, Math.PI * 2);
+  context.fill();
   context.stroke();
   context.restore();
 }
 
-function renderArtistView() {
+function renderCanvasView() {
+  clearVisibleCanvas();
+
   if (isRoundRevealed) {
-    return;
+    context.drawImage(hiddenCanvas, 0, 0);
+  } else {
+    drawGrid();
   }
 
-  clearVisibleCanvas();
-  drawGrid();
   drawCursor();
 }
 
@@ -117,8 +127,7 @@ function revealDrawing() {
   }
 
   activePointerId = null;
-  clearVisibleCanvas();
-  context.drawImage(hiddenCanvas, 0, 0);
+  renderCanvasView();
 }
 
 function startRound() {
@@ -127,7 +136,7 @@ function startRound() {
   cursorPoint = null;
   isRoundRevealed = false;
   hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
-  renderArtistView();
+  renderCanvasView();
   roundTimer = window.setTimeout(revealDrawing, roundLengthMs);
 }
 
@@ -157,7 +166,7 @@ function startDrawing(event) {
 
   cursorPoint = point;
   paintDot(point, event);
-  renderArtistView();
+  renderCanvasView();
 }
 
 function draw(event) {
@@ -172,7 +181,7 @@ function draw(event) {
   cursorPoint = point;
   hiddenContext.lineTo(point.x, point.y);
   hiddenContext.stroke();
-  renderArtistView();
+  renderCanvasView();
 }
 
 function stopDrawing(event) {
@@ -203,7 +212,7 @@ function undoLastAction() {
 
   if (previousCanvasState) {
     hiddenContext.putImageData(previousCanvasState, 0, 0);
-    renderArtistView();
+    renderCanvasView();
   }
 }
 
@@ -216,13 +225,45 @@ function handleKeyboardShortcut(event) {
   }
 }
 
+function selectTool(toolName) {
+  selectedTool = toolName;
+
+  toolButtons.forEach((button) => {
+    const isSelected = button.dataset.tool === selectedTool;
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+
+  renderCanvasView();
+}
+
+function selectColor(color) {
+  selectedColor = color;
+  selectedTool = "pen";
+
+  colorButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.color === color);
+  });
+
+  selectTool("pen");
+}
+
 function moveCursor(event) {
-  if (isDrawing || isRoundRevealed) {
+  if (isDrawing) {
     return;
   }
 
   cursorPoint = getCanvasPoint(event);
-  renderArtistView();
+  renderCanvasView();
+}
+
+function hideCursor() {
+  if (isDrawing) {
+    return;
+  }
+
+  cursorPoint = null;
+  renderCanvasView();
 }
 
 resizeHiddenCanvas();
@@ -232,7 +273,20 @@ canvas.addEventListener("pointermove", draw);
 canvas.addEventListener("pointermove", moveCursor);
 canvas.addEventListener("pointerup", stopDrawing);
 canvas.addEventListener("pointerleave", stopDrawing);
+canvas.addEventListener("pointerleave", hideCursor);
 canvas.addEventListener("pointercancel", stopDrawing);
 clearButton.addEventListener("click", clearCanvas);
+undoButton.addEventListener("click", undoLastAction);
+sizeInput.addEventListener("input", renderCanvasView);
+toolButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectTool(button.dataset.tool);
+  });
+});
+colorButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectColor(button.dataset.color);
+  });
+});
 document.addEventListener("keydown", handleKeyboardShortcut);
 

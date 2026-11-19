@@ -13,55 +13,45 @@
           <h1 id="mainTitle">Blindfold Brush</h1>
           <p>Create a room or join your friends with a four-letter code.</p>
         </div>
+        <div class="controls" role="toolbar" aria-label="Drawing tools">
+          <div class="paint-supplies">
+            <div class="color-palette" aria-label="Brush colors">
+              <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
+              <button class="color-swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
+              <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
+              <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
+              <button class="color-swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e;" aria-label="Green"></button>
+              <button class="color-swatch" type="button" data-color="#14b8a6" style="--swatch: #14b8a6;" aria-label="Teal"></button>
+              <button class="color-swatch" type="button" data-color="#3b82f6" style="--swatch: #3b82f6;" aria-label="Blue"></button>
+              <button class="color-swatch" type="button" data-color="#8b5cf6" style="--swatch: #8b5cf6;" aria-label="Violet"></button>
+              <button class="color-swatch" type="button" data-color="#ec4899" style="--swatch: #ec4899;" aria-label="Pink"></button>
+              <button class="color-swatch" type="button" data-color="#ffffff" style="--swatch: #ffffff;" aria-label="White"></button>
+            </div>
+
+            <div class="tool-group" aria-label="Tools">
+              <button class="tool-button is-active" type="button" data-tool="pen" aria-label="Pen" aria-pressed="true">
+                <img src="pen-icon.svg" alt="" draggable="false">
+              </button>
+              <button class="tool-button" type="button" data-tool="eraser" aria-label="Eraser" aria-pressed="false">
+                <img src="eraser-icon.svg" alt="" draggable="false">
+              </button>
+            </div>
+          </div>
 
         <div class="room-controls">
           <label for="nicknameInput">Nickname</label>
           <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
 
-          <button id="createRoomButton" type="button">Create Room</button>
-
-          <label for="roomCodeInput">Room Code</label>
-          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
-          <button id="joinRoomButton" type="button">Join Room</button>
-
-          <p id="roomMessage" role="status" aria-live="polite"></p>
-        </div>
-      </section>
-
-      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
-        <div>
-          <p>Room Code</p>
-          <h2 id="roomCodeTitle">----</h2>
-          <p id="roomStatus">Share this code so people can connect.</p>
-        </div>
-
-        <div>
-          <h3>Players</h3>
-          <ul id="playerList"></ul>
+          <button id="undoCanvas" type="button">Undo</button>
+          <button id="clearCanvas" type="button">Clear</button>
         </div>
 
         <button id="leaveRoomButton" type="button">Leave Room</button>
       </section>
 
-      <section id="gameArea" hidden>
-        <section class="toolbar" aria-label="Drawing tools">
-          <div>
-            <h1>Blindfold Brush</h1>
-            <p>A three-person drawing app project.</p>
-          </div>
-          <div class="controls">
-            <label for="brushColor">Color</label>
-            <input id="brushColor" type="color" value="#1f2937">
-
-            <label for="brushSize">Size</label>
-            <input id="brushSize" type="range" min="2" max="40" value="8">
-
-            <button id="clearCanvas" type="button">Clear</button>
-          </div>
-        </section>
-
+      <div class="canvas-stage">
         <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
-      </section>
+      </div>
     </main>
 
     <script src="rooms.js"></script>
