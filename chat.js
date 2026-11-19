@@ -158,6 +158,27 @@ class BlindfoldBrushChat {
     return { accepted: true, correct: false, guessedAt };
   }
 
+  submitMessage({ playerId, playerName, text }) {
+    const cleanedText = String(text).trim();
+
+    if (!cleanedText) {
+      return { accepted: false, reason: "empty-message" };
+    }
+
+    const message = {
+      type: CHAT_MESSAGE_TYPES.guess,
+      playerId,
+      playerName,
+      text: cleanedText,
+      createdAt: Date.now(),
+    };
+
+    this.messages.push(message);
+    this.emitMessage(message);
+
+    return { accepted: true, correct: false };
+  }
+
   addSystemMessage(text) {
     const message = {
       type: CHAT_MESSAGE_TYPES.system,
