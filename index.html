@@ -12,19 +12,24 @@
         <div>
           <p class="eyebrow">Private drawing rooms</p>
           <h1 id="mainTitle">Blindfold Brush</h1>
-          <p>Create a room or join your friends with a four-letter code.</p>
+          <p>Enter your name, then create a new room or join your friends.</p>
         </div>
 
         <div class="room-controls">
-          <label for="nicknameInput">Nickname</label>
+          <label for="nicknameInput">Your name</label>
           <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
 
-          <label for="roomCodeInput">Room code</label>
-          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
-
           <div class="button-row">
-            <button id="createRoomButton" type="button">Create Room</button>
-            <button id="joinRoomButton" type="button">Join Room</button>
+            <button id="createRoomButton" type="button">Create a Room</button>
+            <button id="joinRoomButton" type="button">Join a Room</button>
+          </div>
+
+          <div id="joinRoomPanel" class="join-room-panel" hidden>
+            <label for="roomCodeInput">Room code</label>
+            <div class="join-code-row">
+              <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+              <button id="confirmJoinRoomButton" type="button">Enter</button>
+            </div>
           </div>
 
           <p id="roomMessage" role="status"></p>
@@ -42,8 +47,6 @@
           <p class="eyebrow">Players</p>
           <ul id="playerList"></ul>
         </div>
-
-        <button id="leaveRoomButton" type="button">Leave Room</button>
       </section>
 
       <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
@@ -52,9 +55,19 @@
             <p class="eyebrow">Round 2 of 9</p>
             <h2>Blindfold Brush</h2>
           </div>
-          <div class="round-status" aria-label="Round timer">
-            <span>Artist: Waiting</span>
-            <strong>00:30</strong>
+
+          <div class="game-header-actions">
+            <div class="room-code-badge" aria-label="Current room code">
+              <span>Room code</span>
+              <strong id="activeRoomCode">----</strong>
+            </div>
+
+            <div class="round-status" aria-label="Round timer">
+              <span>Artist: Waiting</span>
+              <strong>00:30</strong>
+            </div>
+
+            <button id="leaveRoomButton" class="leave-room-button" type="button">Leave Room</button>
           </div>
         </header>
 
@@ -146,6 +159,8 @@
       const roomCodeInput = document.querySelector("#roomCodeInput");
       const createRoomButton = document.querySelector("#createRoomButton");
       const joinRoomButton = document.querySelector("#joinRoomButton");
+      const joinRoomPanel = document.querySelector("#joinRoomPanel");
+      const confirmJoinRoomButton = document.querySelector("#confirmJoinRoomButton");
       const leaveRoomButton = document.querySelector("#leaveRoomButton");
       const roomMessage = document.querySelector("#roomMessage");
       const roomCodeTitle = document.querySelector("#roomCodeTitle");
@@ -159,6 +174,7 @@
       const timerDisplay = document.querySelector(".round-status strong");
       const clearCanvasButton = document.querySelector("#clearCanvas");
       const leaderboardList = document.querySelector(".leaderboard-list");
+      const activeRoomCode = document.querySelector("#activeRoomCode");
       const currentRoomKey = "blindfold-brush-current-room";
       const currentPlayerKey = "blindfold-brush-current-player";
       const correctAnswer = "pizza planet";
@@ -174,6 +190,17 @@
 
       function showRoomMessage(message) {
         roomMessage.textContent = message;
+      }
+
+      function showJoinRoomPanel() {
+        joinRoomPanel.hidden = false;
+        showRoomMessage("");
+        roomCodeInput.focus();
+      }
+
+      function hideJoinRoomPanel() {
+        joinRoomPanel.hidden = true;
+        roomCodeInput.value = "";
       }
 
       function createLocalPlayer() {
@@ -263,6 +290,7 @@
         roomLobby.hidden = true;
         gameArea.hidden = false;
         roomCodeTitle.textContent = room.code;
+        activeRoomCode.textContent = room.code;
         roomStatus.textContent = room.hostId === currentPlayer.id
           ? "Share this four-letter code so people can connect."
           : "You joined the room.";
@@ -356,6 +384,25 @@
         roomLobby.hidden = true;
         gameArea.hidden = true;
         mainMenu.hidden = false;
+        hideJoinRoomPanel();
+      }
+
+      function joinRequestedRoom() {
+        const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
+
+        if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
+          showRoomMessage("Enter a four-letter room code.");
+          return;
+        }
+
+        try {
+          const room = roomManager.join(roomCode, getCurrentPlayer());
+          window.localStorage.setItem(currentRoomKey, room.code);
+          showRoomMessage("");
+          renderRoom(room);
+        } catch (error) {
+          showRoomMessage("Room not found. Check the code and try again.");
+        }
       }
 
       chatForm.addEventListener("submit", (event) => {
@@ -392,24 +439,21 @@
           const room = roomManager.create(getCurrentPlayer());
           window.localStorage.setItem(currentRoomKey, room.code);
           showRoomMessage("");
+          hideJoinRoomPanel();
           renderRoom(room);
         });
 
         joinRoomButton.addEventListener("click", () => {
-          const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
+          showJoinRoomPanel();
+        });
 
-          if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
-            showRoomMessage("Enter a four-letter room code.");
-            return;
-          }
+        confirmJoinRoomButton.addEventListener("click", () => {
+          joinRequestedRoom();
+        });
 
-          try {
-            const room = roomManager.join(roomCode, getCurrentPlayer());
-            window.localStorage.setItem(currentRoomKey, room.code);
-            showRoomMessage("");
-            renderRoom(room);
-          } catch (error) {
-            showRoomMessage("Room not found. Check the code and try again.");
+        roomCodeInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            joinRequestedRoom();
           }
         });
 
