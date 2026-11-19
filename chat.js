@@ -3,6 +3,8 @@ const CHAT_MESSAGE_TYPES = {
   system: "system",
 };
 
+const CHAT_REVEAL_TIMES = [10, 20];
+
 function normalizeGuess(value) {
   return String(value)
     .trim()
@@ -56,22 +58,43 @@ function isCorrectGuess(guess, answer) {
   return getEditDistance(normalizedGuess, normalizedAnswer) <= allowedMistakes;
 }
 
+function getRandomLetterIndexes(answer) {
+  const indexes = String(answer)
+    .split("")
+    .map((character, index) => ({ character, index }))
+    .filter((item) => item.character !== " ")
+    .map((item) => item.index);
+
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [indexes[index], indexes[randomIndex]] = [indexes[randomIndex], indexes[index]];
+  }
+
+  return indexes;
+}
+
 class BlindfoldBrushChat {
   constructor({ onMessage, onCorrectGuess } = {}) {
     this.messages = [];
+    this.hiddenCorrectGuesses = [];
     this.correctGuessPlayerIds = [];
     this.currentAnswer = "";
     this.currentArtistId = null;
+    this.revealIndexes = [];
+    this.roundStartedAt = null;
     this.isDrawingRoundActive = false;
     this.onMessage = onMessage;
     this.onCorrectGuess = onCorrectGuess;
   }
 
-  startRound({ answer, artistId }) {
+  startRound({ answer, artistId, startedAt = Date.now() }) {
     this.messages = [];
+    this.hiddenCorrectGuesses = [];
     this.correctGuessPlayerIds = [];
     this.currentAnswer = answer;
     this.currentArtistId = artistId;
+    this.revealIndexes = getRandomLetterIndexes(answer);
+    this.roundStartedAt = startedAt;
     this.isDrawingRoundActive = true;
   }
 
@@ -79,10 +102,13 @@ class BlindfoldBrushChat {
     this.isDrawingRoundActive = false;
     this.currentAnswer = "";
     this.currentArtistId = null;
+    this.revealIndexes = [];
+    this.roundStartedAt = null;
   }
 
   submitGuess({ playerId, playerName, text }) {
     const cleanedText = String(text).trim();
+    const guessedAt = Date.now();
 
     if (!this.isDrawingRoundActive || !cleanedText) {
       return { accepted: false, reason: "chat-closed" };
@@ -98,13 +124,24 @@ class BlindfoldBrushChat {
 
     if (isCorrectGuess(cleanedText, this.currentAnswer)) {
       this.correctGuessPlayerIds.push(playerId);
+      this.hiddenCorrectGuesses.push({
+        playerId,
+        playerName,
+        text: cleanedText,
+        guessedAt,
+      });
       this.addSystemMessage(`${playerName} guessed correctly.`);
 
       if (this.onCorrectGuess) {
-        this.onCorrectGuess(playerId);
+        this.onCorrectGuess(playerId, {
+          playerId,
+          playerName,
+          guessedAt,
+          text: cleanedText,
+        });
       }
 
-      return { accepted: true, correct: true };
+      return { accepted: true, correct: true, guessedAt };
     }
 
     const message = {
@@ -112,13 +149,13 @@ class BlindfoldBrushChat {
       playerId,
       playerName,
       text: cleanedText,
-      createdAt: Date.now(),
+      createdAt: guessedAt,
     };
 
     this.messages.push(message);
     this.emitMessage(message);
 
-    return { accepted: true, correct: false };
+    return { accepted: true, correct: false, guessedAt };
   }
 
   addSystemMessage(text) {
@@ -134,6 +171,27 @@ class BlindfoldBrushChat {
 
   getVisibleMessages() {
     return [...this.messages];
+  }
+
+  getHiddenCorrectGuesses() {
+    return this.hiddenCorrectGuesses.map((guess) => ({ ...guess }));
+  }
+
+  getAnswerMask(elapsedSeconds = 0) {
+    const answer = String(this.currentAnswer);
+    const revealCount = CHAT_REVEAL_TIMES.filter((seconds) => elapsedSeconds >= seconds).length;
+    const revealIndexes = this.revealIndexes.slice(0, revealCount);
+
+    return answer
+      .split("")
+      .map((character, index) => {
+        if (character === " ") {
+          return " ";
+        }
+
+        return revealIndexes.includes(index) ? character : "_";
+      })
+      .join("");
   }
 
   emitMessage(message) {
