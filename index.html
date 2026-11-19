@@ -68,6 +68,7 @@
               <strong>00:30</strong>
             </div>
 
+            <button id="startGameButton" class="start-game-button" type="button" disabled>Need Players</button>
             <button id="leaveRoomButton" class="leave-room-button" type="button">Leave Room</button>
           </div>
         </header>
@@ -163,6 +164,7 @@
       const joinRoomPanel = document.querySelector("#joinRoomPanel");
       const confirmJoinRoomButton = document.querySelector("#confirmJoinRoomButton");
       const cancelJoinRoomButton = document.querySelector("#cancelJoinRoomButton");
+      const startGameButton = document.querySelector("#startGameButton");
       const leaveRoomButton = document.querySelector("#leaveRoomButton");
       const roomMessage = document.querySelector("#roomMessage");
       const roomCodeTitle = document.querySelector("#roomCodeTitle");
@@ -181,12 +183,15 @@
       const currentPlayerKey = "blindfold-brush-current-player";
       const correctAnswer = "pizza planet";
       const roundLengthSeconds = 30;
+      const requiredPlayerCount = roomApi?.MIN_ACTIVE_PLAYERS || 2;
 
       let roomManager = null;
       let currentPlayer = null;
       let activeRoom = null;
+      let activeRoomPhase = "lobby";
       let localScore = 0;
       let uiTimerId = null;
+      let roomRefreshTimerId = null;
       let roundSecondsRemaining = roundLengthSeconds;
       const playerScores = new Map();
 
@@ -226,8 +231,34 @@
         return currentPlayer;
       }
 
+      function getActivePlayers(room) {
+        return room.players.filter((player) => player.isActive && !player.isSpectator);
+      }
+
+      function canStartCurrentRoom(room) {
+        return (
+          room.hostId === currentPlayer.id &&
+          room.phase === roomApi.ROOM_PHASES.lobby &&
+          getActivePlayers(room).length >= requiredPlayerCount
+        );
+      }
+
+      function updateStartGameButton(room) {
+        const activePlayerCount = getActivePlayers(room).length;
+        const isHost = room.hostId === currentPlayer.id;
+        const isWaitingToStart = room.phase === roomApi.ROOM_PHASES.lobby;
+
+        startGameButton.hidden = !isHost || !isWaitingToStart;
+        startGameButton.disabled = !canStartCurrentRoom(room);
+        startGameButton.textContent = startGameButton.disabled
+          ? `Need ${requiredPlayerCount} Players`
+          : "Start Game";
+
+        startGameButton.setAttribute("aria-label", `${activePlayerCount} of ${requiredPlayerCount} players joined`);
+      }
+
       function renderLeaderboard(room, { highlightedPlayerId = null } = {}) {
-        const activePlayers = room.players.filter((player) => player.isActive);
+        const activePlayers = getActivePlayers(room);
         const rankedPlayers = [...activePlayers];
 
         activePlayers.forEach((player) => {
@@ -267,10 +298,15 @@
       }
 
       function renderRoom(room) {
+        const previousPhase = activeRoomPhase;
+
         activeRoom = room;
+        activeRoomPhase = room.phase;
+        document.body.classList.add("is-in-room");
         mainMenu.hidden = true;
         roomLobby.hidden = true;
         gameArea.hidden = false;
+        gameArea.classList.toggle("is-game-started", room.phase !== roomApi.ROOM_PHASES.lobby);
         roomCodeTitle.textContent = room.code;
         activeRoomCode.textContent = room.code;
         roomStatus.textContent = room.hostId === currentPlayer.id
@@ -287,8 +323,17 @@
           });
 
         renderLeaderboard(room);
-        clearCanvasButton.click();
-        startRoundTimer();
+        updateStartGameButton(room);
+
+        if (room.phase === roomApi.ROOM_PHASES.inGame && previousPhase !== roomApi.ROOM_PHASES.inGame) {
+          clearCanvasButton.click();
+          startRoundTimer();
+        }
+
+        if (room.phase === roomApi.ROOM_PHASES.lobby) {
+          stopRoundTimer();
+          updateRoundTimerDisplay(roundLengthSeconds);
+        }
       }
 
       function appendChatMessage(playerName, message, { isSystem = false } = {}) {
@@ -319,6 +364,23 @@
       function stopRoundTimer() {
         window.clearInterval(uiTimerId);
         uiTimerId = null;
+      }
+
+      function startRoomRefresh(roomCode) {
+        stopRoomRefresh();
+
+        roomRefreshTimerId = window.setInterval(() => {
+          const latestRoom = roomManager.get(roomCode);
+
+          if (latestRoom) {
+            renderRoom(latestRoom);
+          }
+        }, 1000);
+      }
+
+      function stopRoomRefresh() {
+        window.clearInterval(roomRefreshTimerId);
+        roomRefreshTimerId = null;
       }
 
       function startRoundTimer() {
@@ -362,6 +424,9 @@
 
         window.localStorage.removeItem(currentRoomKey);
         activeRoom = null;
+        activeRoomPhase = roomApi.ROOM_PHASES.lobby;
+        document.body.classList.remove("is-in-room");
+        stopRoomRefresh();
         stopRoundTimer();
         roomLobby.hidden = true;
         gameArea.hidden = true;
@@ -382,9 +447,24 @@
           window.localStorage.setItem(currentRoomKey, room.code);
           showRoomMessage("");
           renderRoom(room);
+          startRoomRefresh(room.code);
         } catch (error) {
           showRoomMessage("Room not found. Check the code and try again.");
         }
+      }
+
+      function startCurrentGame() {
+        if (!activeRoom || !canStartCurrentRoom(activeRoom)) {
+          return;
+        }
+
+        const startedRoom = roomManager.save({
+          ...activeRoom,
+          phase: roomApi.ROOM_PHASES.inGame,
+          updatedAt: Date.now(),
+        });
+
+        renderRoom(startedRoom);
       }
 
       chatForm.addEventListener("submit", (event) => {
@@ -423,6 +503,7 @@
           showRoomMessage("");
           hideJoinRoomPanel();
           renderRoom(room);
+          startRoomRefresh(room.code);
         });
 
         joinRoomButton.addEventListener("click", () => {
@@ -437,6 +518,8 @@
           hideJoinRoomPanel();
           showRoomMessage("");
         });
+
+        startGameButton.addEventListener("click", startCurrentGame);
 
         roomCodeInput.addEventListener("keydown", (event) => {
           if (event.key === "Enter") {
