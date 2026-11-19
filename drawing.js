@@ -501,6 +501,7 @@ function initializeRuntimeGame() {
   let roomCreated = false;
   let latestGameState = null;
   let latestRoundResult = null;
+  let timerDisplayId = null;
 
   const roomBar = createElement("section", "bb-room-bar");
   const nicknameInput = createElement("input", "bb-room-input");
@@ -589,6 +590,7 @@ function initializeRuntimeGame() {
   setDrawingToolsAvailable(false);
   renderChat();
   renderLeaderboard();
+  startTimerDisplay();
 
   function getNickname() {
     return nicknameInput.value.trim() || "Player";
@@ -668,6 +670,26 @@ function initializeRuntimeGame() {
     timerText.textContent = Number.isFinite(secondsRemaining) && secondsRemaining > 0
       ? `${secondsRemaining}s`
       : "";
+  }
+
+  function updateTimerFromState() {
+    if (!latestGameState || !latestGameState.phaseEndsAt) {
+      updateTimer(0);
+      return;
+    }
+
+    const secondsRemaining = Math.max(0, Math.ceil((latestGameState.phaseEndsAt - Date.now()) / 1000));
+
+    updateTimer(secondsRemaining);
+
+    if (latestGameState.phase === "drawing") {
+      updateHint(latestGameState);
+    }
+  }
+
+  function startTimerDisplay() {
+    window.clearInterval(timerDisplayId);
+    timerDisplayId = window.setInterval(updateTimerFromState, 250);
   }
 
   function updateHint(state) {
