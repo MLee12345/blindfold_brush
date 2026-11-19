@@ -414,13 +414,7 @@
         });
 
         leaveRoomButton.addEventListener("click", leaveCurrentRoom);
-
-        const savedRoomCode = window.localStorage.getItem(currentRoomKey);
-        const savedRoom = savedRoomCode ? roomManager.get(savedRoomCode) : null;
-
-        if (savedRoom && savedRoom.players.some((player) => player.id === currentPlayer.id && player.isActive)) {
-          renderRoom(savedRoom);
-        }
+        window.localStorage.removeItem(currentRoomKey);
       }
     </script>
 
