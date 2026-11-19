@@ -273,8 +273,8 @@ input[type="range"] {
 
 .gameplay-layout {
   display: grid;
-  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr) minmax(240px, 280px);
-  gap: 14px;
+  grid-template-columns: minmax(140px, 170px) minmax(0, 1fr) minmax(240px, 280px);
+  gap: 12px;
   align-items: stretch;
   min-height: 0;
 }
@@ -289,6 +289,15 @@ input[type="range"] {
 
 .leaderboard-panel {
   border-top: 6px solid var(--gold);
+  padding: 10px;
+}
+
+.leaderboard-panel .panel-heading {
+  margin-bottom: 8px;
+}
+
+.leaderboard-panel h2 {
+  font-size: 18px;
 }
 
 .drawing-panel {
@@ -306,7 +315,7 @@ input[type="range"] {
 .leaderboard-list {
   display: grid;
   flex: 1;
-  gap: 8px;
+  gap: 6px;
   min-height: 0;
   overflow-y: auto;
   margin: 0;
@@ -316,10 +325,10 @@ input[type="range"] {
 
 .leaderboard-player {
   display: grid;
-  grid-template-columns: 20px 36px minmax(0, 1fr) auto;
+  grid-template-columns: 18px 30px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 7px;
   border: 2px solid #dbe7ef;
   border-radius: 8px;
   background: #ffffff;
@@ -341,13 +350,13 @@ input[type="range"] {
 
 .avatar {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--teal), var(--sky));
   color: white;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -366,11 +375,14 @@ input[type="range"] {
 .player-info small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .score {
+  grid-column: 2 / -1;
+  justify-self: start;
   font-weight: 900;
+  font-size: 13px;
 }
 
 .drawing-panel {
