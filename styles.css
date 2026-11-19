@@ -57,6 +57,11 @@ body {
   display: none !important;
 }
 
+body.is-in-room .main-menu,
+body.is-in-room .room-lobby {
+  display: none !important;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: var(--teal);
@@ -348,6 +353,22 @@ input[type="range"] {
   background: linear-gradient(135deg, #dc2626, #db2777);
 }
 
+.start-game-button {
+  background: linear-gradient(135deg, var(--lime), var(--teal));
+}
+
+.start-game-button:hover {
+  background: linear-gradient(135deg, #16a34a, #0f766e);
+}
+
+.start-game-button:disabled {
+  background: #d9e2ec;
+  color: #667085;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
 .round-status.is-low {
   border-color: rgba(239, 68, 68, 0.75);
   background: #ffe4e6;
@@ -399,6 +420,8 @@ input[type="range"] {
   display: grid;
   flex: 1;
   gap: 5px;
+  align-content: start;
+  align-items: start;
   min-height: 0;
   overflow-y: auto;
   margin: 0;
@@ -409,6 +432,7 @@ input[type="range"] {
 .leaderboard-player {
   display: block;
   align-items: center;
+  align-self: start;
   min-height: 26px;
   padding: 4px 8px;
   border: 1px solid #dbe7ef;
