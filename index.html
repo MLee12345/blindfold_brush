@@ -8,46 +8,381 @@
   </head>
   <body>
     <main class="app">
-      <section class="toolbar" aria-label="Drawing tools">
+      <section id="mainMenu" class="main-menu" aria-labelledby="mainTitle">
         <div>
-          <h1>Blindfold Brush</h1>
-          <p>A three-person drawing app project.</p>
+          <p class="eyebrow">Private drawing rooms</p>
+          <h1 id="mainTitle">Blindfold Brush</h1>
+          <p>Create a room or join your friends with a four-letter code.</p>
         </div>
-        <div class="controls">
-          <label for="brushColor">Color</label>
-          <input id="brushColor" type="color" value="#1f2937">
 
-          <label for="brushSize">Size</label>
-          <input id="brushSize" type="range" min="2" max="40" value="8">
+        <div class="room-controls">
+          <label for="nicknameInput">Nickname</label>
+          <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
 
-          <button id="clearCanvas" type="button">Clear</button>
+          <label for="roomCodeInput">Room code</label>
+          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+
+          <div class="button-row">
+            <button id="createRoomButton" type="button">Create Room</button>
+            <button id="joinRoomButton" type="button">Join Room</button>
+          </div>
+
+          <p id="roomMessage" role="status"></p>
         </div>
       </section>
 
-      <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
+        <div>
+          <p class="eyebrow">Room code</p>
+          <h2 id="roomCodeTitle">----</h2>
+          <p id="roomStatus">Share this code so people can connect.</p>
+        </div>
 
-      <section aria-labelledby="teamJobs">
-        <h2 id="teamJobs">Team Jobs</h2>
+        <div>
+          <p class="eyebrow">Players</p>
+          <ul id="playerList"></ul>
+        </div>
 
-        <article>
-          <h3>Frontend Designer</h3>
-          <p>Branch: <strong>frontend-ui</strong></p>
-          <p>Works on the page layout, buttons, controls, colors, spacing, and the overall look of the app.</p>
-        </article>
+        <button id="leaveRoomButton" type="button">Leave Room</button>
+      </section>
 
-        <article>
-          <h3>Drawing Feature Developer</h3>
-          <p>Branch: <strong>drawing-engine</strong></p>
-          <p>Works on the canvas drawing, brush size, brush color, clear button, eraser, undo, and redo features.</p>
-        </article>
+      <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
+        <header class="game-header">
+          <div>
+            <p class="eyebrow">Round 2 of 9</p>
+            <h2>Blindfold Brush</h2>
+          </div>
+          <div class="round-status" aria-label="Round timer">
+            <span>Artist: Maya</span>
+            <strong>00:24</strong>
+          </div>
+        </header>
 
-        <article>
-          <h3>Project Manager and Tester</h3>
-          <p>Branch: <strong>project-setup-docs</strong></p>
-          <p>Works on the README, testing notes, bugs, project organization, and pull request reviews.</p>
-        </article>
+        <div class="gameplay-layout">
+          <aside class="panel leaderboard-panel" aria-labelledby="leaderboardTitle">
+            <div class="panel-heading">
+              <p class="eyebrow">Scores</p>
+              <h2 id="leaderboardTitle">Leaderboard</h2>
+            </div>
+
+            <ol class="leaderboard-list">
+              <li class="leaderboard-player is-leading">
+                <span class="rank">1</span>
+                <span class="avatar" aria-hidden="true">MJ</span>
+                <span class="player-info">
+                  <strong>Maya</strong>
+                  <small>Artist</small>
+                </span>
+                <span class="score">420</span>
+              </li>
+              <li class="leaderboard-player">
+                <span class="rank">2</span>
+                <span class="avatar" aria-hidden="true">AL</span>
+                <span class="player-info">
+                  <strong>Alex</strong>
+                  <small>Guessed fast</small>
+                </span>
+                <span class="score">360</span>
+              </li>
+              <li class="leaderboard-player">
+                <span class="rank">3</span>
+                <span class="avatar" aria-hidden="true">SK</span>
+                <span class="player-info">
+                  <strong>Sophia</strong>
+                  <small>Ready</small>
+                </span>
+                <span class="score">290</span>
+              </li>
+            </ol>
+          </aside>
+
+          <section class="drawing-panel" aria-label="Drawing area">
+            <div class="prompt-card">
+              <p class="eyebrow">Guessing hint</p>
+              <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+            </div>
+
+            <div class="canvas-stage">
+              <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
+            </div>
+
+            <section class="toolbar" aria-label="Drawing tools">
+              <div class="controls" role="toolbar" aria-label="Drawing tools">
+                <label for="brushColor">Color</label>
+                <input id="brushColor" type="color" value="#1f2937">
+
+                <div class="paint-supplies">
+                  <div class="color-palette" aria-label="Brush colors">
+                    <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
+                    <button class="color-swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
+                    <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
+                    <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
+                    <button class="color-swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e;" aria-label="Green"></button>
+                    <button class="color-swatch" type="button" data-color="#14b8a6" style="--swatch: #14b8a6;" aria-label="Teal"></button>
+                    <button class="color-swatch" type="button" data-color="#3b82f6" style="--swatch: #3b82f6;" aria-label="Blue"></button>
+                    <button class="color-swatch" type="button" data-color="#8b5cf6" style="--swatch: #8b5cf6;" aria-label="Violet"></button>
+                    <button class="color-swatch" type="button" data-color="#ec4899" style="--swatch: #ec4899;" aria-label="Pink"></button>
+                    <button class="color-swatch" type="button" data-color="#ffffff" style="--swatch: #ffffff;" aria-label="White"></button>
+                  </div>
+
+                  <div class="tool-group" aria-label="Tools">
+                    <button class="tool-button is-active" type="button" data-tool="pen" aria-label="Pen" aria-pressed="true">
+                      <img src="pen-icon.svg" alt="" draggable="false">
+                    </button>
+                    <button class="tool-button" type="button" data-tool="eraser" aria-label="Eraser" aria-pressed="false">
+                      <img src="eraser-icon.svg" alt="" draggable="false">
+                    </button>
+                  </div>
+                </div>
+
+                <label for="brushSize">Size</label>
+                <input id="brushSize" type="range" min="2" max="40" value="8">
+
+                <button id="undoCanvas" type="button">Undo</button>
+                <button id="clearCanvas" type="button">Clear</button>
+              </div>
+            </section>
+          </section>
+
+          <aside class="panel chat-panel" aria-labelledby="chatTitle">
+            <div class="panel-heading">
+              <p class="eyebrow">Live guesses</p>
+              <h2 id="chatTitle">Chat</h2>
+            </div>
+
+            <div class="chat-messages" aria-live="polite">
+              <p class="chat-message">
+                <strong>Alex</strong>
+                Is it a sandwich?
+              </p>
+              <p class="chat-message system-message">
+                Sophia guessed correctly.
+              </p>
+              <p class="chat-message">
+                <strong>Jordan</strong>
+                Looks like a bicycle.
+              </p>
+            </div>
+
+            <form class="chat-form">
+              <label for="guessInput">Guess</label>
+              <div class="chat-input-row">
+                <input id="guessInput" type="text" placeholder="Type a guess">
+                <button type="submit">Send</button>
+              </div>
+            </form>
+          </aside>
+        </div>
       </section>
     </main>
+
+    <!-- Firebase browser scripts (online rooms) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="network.js"></script>
+    <script src="rooms.js"></script>
+    <script>
+      const roomApi = window.BlindfoldBrushRooms;
+      const mainMenu = document.querySelector("#mainMenu");
+      const roomLobby = document.querySelector("#roomLobby");
+      const gameArea = document.querySelector("#gameArea");
+      const nicknameInput = document.querySelector("#nicknameInput");
+      const roomCodeInput = document.querySelector("#roomCodeInput");
+      const createRoomButton = document.querySelector("#createRoomButton");
+      const joinRoomButton = document.querySelector("#joinRoomButton");
+      const leaveRoomButton = document.querySelector("#leaveRoomButton");
+      const roomMessage = document.querySelector("#roomMessage");
+      const roomCodeTitle = document.querySelector("#roomCodeTitle");
+      const roomStatus = document.querySelector("#roomStatus");
+      const playerList = document.querySelector("#playerList");
+      const currentRoomKey = "blindfold-brush-current-room";
+      const currentPlayerKey = "blindfold-brush-current-player";
+
+      let roomManager = null;
+      let currentPlayer = null;
+      let currentRoomCode = null;
+      let stopWatchingRoom = null;
+      let stopPresence = null;
+
+      function showRoomMessage(message) {
+        roomMessage.textContent = message;
+      }
+
+      function setButtonsBusy(isBusy) {
+        createRoomButton.disabled = isBusy;
+        joinRoomButton.disabled = isBusy;
+      }
+
+      function createLocalPlayer() {
+        const savedPlayer = window.localStorage.getItem(currentPlayerKey);
+
+        if (savedPlayer) {
+          return JSON.parse(savedPlayer);
+        }
+
+        return {
+          id: roomApi.createPlayerId(),
+          nickname: "Player",
+        };
+      }
+
+      function getCurrentPlayer() {
+        currentPlayer.nickname = nicknameInput.value.trim() || "Player";
+        window.localStorage.setItem(currentPlayerKey, JSON.stringify(currentPlayer));
+        return currentPlayer;
+      }
+
+      function renderRoom(room) {
+        mainMenu.hidden = true;
+        roomLobby.hidden = false;
+        gameArea.hidden = false;
+        roomCodeTitle.textContent = room.code;
+        roomStatus.textContent = room.hostId === currentPlayer.id
+          ? "Share this four-letter code so people can connect."
+          : "You joined the room.";
+        playerList.innerHTML = "";
+
+        room.players
+          .filter((player) => player.isActive)
+          .forEach((player) => {
+            const playerItem = document.createElement("li");
+            playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
+            playerList.append(playerItem);
+          });
+      }
+
+      function showMainMenu() {
+        roomLobby.hidden = true;
+        gameArea.hidden = true;
+        mainMenu.hidden = false;
+      }
+
+      // Stop listening to the online room (used when leaving or switching rooms).
+      function stopListeningToRoom() {
+        if (stopWatchingRoom) {
+          stopWatchingRoom();
+          stopWatchingRoom = null;
+        }
+
+        if (stopPresence) {
+          stopPresence();
+          stopPresence = null;
+        }
+      }
+
+      // Show the lobby and keep it in sync with every other device in the room.
+      function enterRoom(room) {
+        stopListeningToRoom();
+        currentRoomCode = room.code;
+        window.localStorage.setItem(currentRoomKey, room.code);
+        showRoomMessage("");
+        renderRoom(room);
+
+        stopPresence = roomManager.keepPlayerOnline(room.code, currentPlayer.id);
+        stopWatchingRoom = roomManager.watch(room.code, (liveRoom) => {
+          if (!liveRoom) {
+            stopListeningToRoom();
+            currentRoomCode = null;
+            window.localStorage.removeItem(currentRoomKey);
+            showMainMenu();
+            showRoomMessage("This room was closed.");
+            return;
+          }
+
+          renderRoom(liveRoom);
+        });
+      }
+
+      async function leaveCurrentRoom() {
+        const roomCode = currentRoomCode || window.localStorage.getItem(currentRoomKey);
+
+        stopListeningToRoom();
+        currentRoomCode = null;
+        window.localStorage.removeItem(currentRoomKey);
+        showMainMenu();
+
+        if (roomCode) {
+          try {
+            await roomManager.leave(roomCode, currentPlayer.id);
+          } catch (error) {
+            window.console.warn("Could not leave room.", error);
+          }
+        }
+      }
+
+      if (!roomApi) {
+        showRoomMessage("Room code helpers are not loaded yet.");
+      } else {
+        try {
+          roomManager = new roomApi.BlindfoldBrushRoomManager();
+        } catch (error) {
+          showRoomMessage(error.message);
+        }
+
+        currentPlayer = createLocalPlayer();
+        nicknameInput.value = currentPlayer.nickname;
+
+        roomCodeInput.addEventListener("input", () => {
+          roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value);
+        });
+
+        createRoomButton.addEventListener("click", async () => {
+          if (!roomManager) {
+            return;
+          }
+
+          setButtonsBusy(true);
+          showRoomMessage("Creating room...");
+
+          try {
+            const room = await roomManager.create(getCurrentPlayer());
+            enterRoom(room);
+          } catch (error) {
+            showRoomMessage(error.message);
+          } finally {
+            setButtonsBusy(false);
+          }
+        });
+
+        joinRoomButton.addEventListener("click", async () => {
+          if (!roomManager) {
+            return;
+          }
+
+          const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
+
+          if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
+            showRoomMessage("Enter a four-letter room code.");
+            return;
+          }
+
+          setButtonsBusy(true);
+          showRoomMessage("Joining room...");
+
+          try {
+            const room = await roomManager.join(roomCode, getCurrentPlayer());
+            enterRoom(room);
+          } catch (error) {
+            showRoomMessage(error.message);
+          } finally {
+            setButtonsBusy(false);
+          }
+        });
+
+        leaveRoomButton.addEventListener("click", leaveCurrentRoom);
+
+        // If the page was refreshed while in a room, rejoin it.
+        const savedRoomCode = window.localStorage.getItem(currentRoomKey);
+
+        if (roomManager && savedRoomCode) {
+          roomManager.join(savedRoomCode, getCurrentPlayer())
+            .then(enterRoom)
+            .catch(() => {
+              window.localStorage.removeItem(currentRoomKey);
+            });
+        }
+      }
+    </script>
 
     <script src="drawing.js"></script>
   </body>
