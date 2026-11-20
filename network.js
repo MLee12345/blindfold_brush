@@ -1,187 +1,283 @@
-// network.js
-// Connects Blindfold Brush to Firebase Realtime Database so rooms are shared
-// between different devices. Rooms are saved at /rooms/{roomCode}.
-//
-// index.html loads the Firebase browser scripts (CDN) before this file.
-
-// 1. Paste your Firebase project settings here
-//    (Firebase console > Project settings > Your apps > Web app).
-const firebaseConfig = {
-  apiKey: "AIzaSyB3GcdP_MuWh1X9j1CxuPeBk_4fDQFZe0M",
-  authDomain: "blindfold-brush.firebaseapp.com",
-  databaseURL: "https://blindfold-brush-default-rtdb.firebaseio.com/",
-  projectId: "blindfold-brush",
-  storageBucket: "blindfold-brush.firebasestorage.app",
-  messagingSenderId: "61571644789",
-  appId: "1:61571644789:web:ecc8965949a15ed096a73c"
+const NETWORK_EVENTS = {
+  playerJoined: "player-joined",
+  playerLeft: "player-left",
+  roomUpdated: "room-updated",
+  promptsSubmitted: "prompts-submitted",
+  gameStarted: "game-started",
+  gameStateUpdated: "game-state-updated",
+  promptSelected: "prompt-selected",
+  drawingStroke: "drawing-stroke",
+  drawingCleared: "drawing-cleared",
+  drawingUndo: "drawing-undo",
+  chatMessage: "chat-message",
+  correctGuess: "correct-guess",
+  roundEnded: "round-ended",
+  stateRequested: "state-requested",
 };
 
-let database = null;
-
-function isFirebaseConfigured() {
-  return Boolean(firebaseConfig.databaseURL) && !firebaseConfig.databaseURL.includes("PASTE_HERE");
+function createNetworkId(prefix = "message") {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// Starts Firebase the first time it is needed and returns the database.
-function connectToFirebase() {
-  if (database) {
-    return database;
-  }
-
-  if (!window.firebase) {
-    throw new Error("Could not load Firebase. Check your internet connection.");
-  }
-
-  if (!isFirebaseConfigured()) {
-    throw new Error("Online rooms are not set up yet. Paste your Firebase config into network.js.");
-  }
-
-  if (window.firebase.apps.length === 0) {
-    window.firebase.initializeApp(firebaseConfig);
-  }
-
-  database = window.firebase.database();
-  return database;
+function normalizeNetworkRoomCode(roomCode) {
+  return String(roomCode || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-function getRoomRef(roomCode) {
-  return connectToFirebase().ref(`rooms/${roomCode}`);
-}
-
-// Turns Firebase errors into messages a player can understand.
-function makeFriendlyError(error) {
-  const text = String((error && (error.code || error.message)) || "");
-
-  if (text.toLowerCase().includes("permission")) {
-    return new Error("Firebase blocked this request. Check your Realtime Database rules.");
+function cloneNetworkPayload(payload) {
+  if (payload === undefined || payload === null) {
+    return {};
   }
 
-  return error instanceof Error ? error : new Error("Could not reach the online rooms. Please try again.");
+  return JSON.parse(JSON.stringify(payload));
 }
 
-// rooms.js keeps players in an array, but Firebase works best with objects.
-// Online, players are stored as { playerId: player }.
-function roomToFirebase(room) {
-  const players = {};
-
-  room.players.forEach((player) => {
-    players[player.id] = player;
-  });
-
-  return { ...room, players };
-}
-
-function roomFromFirebase(data) {
-  if (!data || !data.code) {
-    return null;
+function createNetworkMessage(type, payload = {}, senderId = null, roomCode = null) {
+  if (!type) {
+    throw new Error("Network message type is required.");
   }
 
-  const players = Object.values(data.players || {}).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-
-  return { ...data, players };
+  return {
+    id: createNetworkId(),
+    type,
+    payload: cloneNetworkPayload(payload),
+    senderId,
+    roomCode: roomCode ? normalizeNetworkRoomCode(roomCode) : null,
+    sentAt: Date.now(),
+  };
 }
 
-// Saves a brand-new room, but only if nobody is already using that code.
-// Returns true if the room was saved, false if the code was taken.
-async function saveNewRoom(room) {
-  try {
-    const result = await getRoomRef(room.code).transaction((currentData) => {
-      if (currentData !== null) {
-        return undefined; // Code already in use: cancel.
-      }
+function isNetworkMessage(message) {
+  return Boolean(message && message.id && message.type && message.sentAt);
+}
 
-      return roomToFirebase(room);
-    });
-
-    return result.committed;
-  } catch (error) {
-    throw makeFriendlyError(error);
+class LocalRealtimeChannel {
+  constructor(roomCode, { storage = window.localStorage } = {}) {
+    this.roomCode = normalizeNetworkRoomCode(roomCode);
+    this.storage = storage;
+    this.listeners = new Set();
+    this.receivedMessageIds = new Set();
+    this.storageKey = `blindfold-brush:room:${this.roomCode}`;
+    this.channel = "BroadcastChannel" in window
+      ? new BroadcastChannel(this.storageKey)
+      : null;
+    this.handleBroadcastMessage = this.handleBroadcastMessage.bind(this);
+    this.handleStorageMessage = this.handleStorageMessage.bind(this);
   }
-}
 
-// Reads a room once. Returns null if it does not exist.
-async function loadRoom(roomCode) {
-  try {
-    const snapshot = await getRoomRef(roomCode).get();
-    return roomFromFirebase(snapshot.val());
-  } catch (error) {
-    throw makeFriendlyError(error);
-  }
-}
-
-// Safely changes a room, even if several players change it at the same time.
-// changeFn(room) receives the room (or null) and returns:
-//   - a room object to save it
-//   - null to delete it (or leave it missing)
-//   - undefined to cancel without changing anything
-// Returns the saved room, or null if the room does not exist / was cancelled.
-async function changeRoom(roomCode, changeFn) {
-  try {
-    const result = await getRoomRef(roomCode).transaction((currentData) => {
-      const nextRoom = changeFn(roomFromFirebase(currentData));
-
-      if (nextRoom === undefined) {
-        return undefined;
-      }
-
-      return nextRoom === null ? null : roomToFirebase(nextRoom);
-    });
-
-    if (!result.committed) {
-      return null;
+  connect() {
+    if (this.channel) {
+      this.channel.addEventListener("message", this.handleBroadcastMessage);
     }
 
-    return roomFromFirebase(result.snapshot.val());
-  } catch (error) {
-    throw makeFriendlyError(error);
+    window.addEventListener("storage", this.handleStorageMessage);
+    return this;
   }
-}
 
-// Calls onChange(room) now and every time the room changes online.
-// onChange receives null if the room is deleted.
-// Returns a function that stops listening.
-function watchRoom(roomCode, onChange) {
-  const roomRef = getRoomRef(roomCode);
-  const handleValue = (snapshot) => onChange(roomFromFirebase(snapshot.val()));
+  disconnect() {
+    if (this.channel) {
+      this.channel.removeEventListener("message", this.handleBroadcastMessage);
+      this.channel.close();
+    }
 
-  roomRef.on("value", handleValue, (error) => {
-    window.console.warn("Stopped watching room.", error);
-  });
+    window.removeEventListener("storage", this.handleStorageMessage);
+    this.listeners.clear();
+  }
 
-  return () => roomRef.off("value", handleValue);
-}
+  send(message) {
+    this.rememberMessage(message);
 
-// Marks the player as away if their laptop disconnects or the tab closes,
-// and marks them as back when they reconnect.
-// Returns a function that stops doing this.
-function keepPlayerOnline(roomCode, playerId) {
-  const connectedRef = connectToFirebase().ref(".info/connected");
-  const playerRef = getRoomRef(roomCode).child(`players/${playerId}`);
+    if (this.channel) {
+      this.channel.postMessage(message);
+    }
 
-  const handleConnection = (snapshot) => {
-    if (snapshot.val() !== true) {
+    try {
+      this.storage.setItem(this.storageKey, JSON.stringify(message));
+    } catch (error) {
+      window.console.warn("Could not write network message to local storage.", error);
+    }
+
+    this.emit(message);
+  }
+
+  subscribe(listener) {
+    this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  handleBroadcastMessage(event) {
+    this.receive(event.data);
+  }
+
+  handleStorageMessage(event) {
+    if (event.key !== this.storageKey || !event.newValue) {
       return;
     }
 
-    playerRef.onDisconnect().update({ isActive: false });
+    try {
+      this.receive(JSON.parse(event.newValue));
+    } catch (error) {
+      window.console.warn("Could not read network message from local storage.", error);
+    }
+  }
 
-    // Only update players that still exist, so we never create a half room.
-    playerRef.transaction((player) => (player ? { ...player, isActive: true } : null));
-  };
+  receive(message) {
+    if (!isNetworkMessage(message) || this.receivedMessageIds.has(message.id)) {
+      return;
+    }
 
-  connectedRef.on("value", handleConnection);
+    this.rememberMessage(message);
+    this.emit(message);
+  }
 
-  return () => {
-    connectedRef.off("value", handleConnection);
-    playerRef.onDisconnect().cancel();
-  };
+  rememberMessage(message) {
+    this.receivedMessageIds.add(message.id);
+
+    if (this.receivedMessageIds.size > 200) {
+      const oldestMessageId = this.receivedMessageIds.values().next().value;
+      this.receivedMessageIds.delete(oldestMessageId);
+    }
+  }
+
+  emit(message) {
+    this.listeners.forEach((listener) => {
+      listener(message);
+    });
+  }
+}
+
+class BlindfoldBrushNetwork {
+  constructor({ playerId, roomCode, adapter = null } = {}) {
+    if (!playerId) {
+      throw new Error("Network requires a player id.");
+    }
+
+    if (!roomCode) {
+      throw new Error("Network requires a room code.");
+    }
+
+    this.playerId = playerId;
+    this.roomCode = normalizeNetworkRoomCode(roomCode);
+    this.adapter = adapter || new LocalRealtimeChannel(this.roomCode);
+    this.subscriptions = new Set();
+  }
+
+  connect() {
+    if (typeof this.adapter.connect === "function") {
+      this.adapter.connect();
+    }
+
+    return this;
+  }
+
+  disconnect() {
+    this.subscriptions.forEach((unsubscribe) => {
+      unsubscribe();
+    });
+    this.subscriptions.clear();
+
+    if (typeof this.adapter.disconnect === "function") {
+      this.adapter.disconnect();
+    }
+  }
+
+  send(type, payload = {}) {
+    const message = createNetworkMessage(type, payload, this.playerId, this.roomCode);
+
+    this.adapter.send(message);
+    return message;
+  }
+
+  on(type, listener) {
+    return this.onAny((message) => {
+      if (message.type === type) {
+        listener(message.payload, message);
+      }
+    });
+  }
+
+  onAny(listener) {
+    const unsubscribe = this.adapter.subscribe((message) => {
+      if (isNetworkMessage(message) && message.roomCode === this.roomCode) {
+        listener(message);
+      }
+    });
+
+    this.subscriptions.add(unsubscribe);
+
+    return () => {
+      unsubscribe();
+      this.subscriptions.delete(unsubscribe);
+    };
+  }
+
+  announceJoin(player) {
+    return this.send(NETWORK_EVENTS.playerJoined, { player });
+  }
+
+  announceLeave(playerId = this.playerId) {
+    return this.send(NETWORK_EVENTS.playerLeft, { playerId });
+  }
+
+  updateRoom(room) {
+    return this.send(NETWORK_EVENTS.roomUpdated, { room });
+  }
+
+  submitPrompts(prompts) {
+    return this.send(NETWORK_EVENTS.promptsSubmitted, { prompts });
+  }
+
+  startGame(gameState) {
+    return this.send(NETWORK_EVENTS.gameStarted, { gameState });
+  }
+
+  updateGameState(gameState) {
+    return this.send(NETWORK_EVENTS.gameStateUpdated, { gameState });
+  }
+
+  selectPrompt(prompt) {
+    return this.send(NETWORK_EVENTS.promptSelected, { prompt });
+  }
+
+  sendDrawingStroke(stroke) {
+    return this.send(NETWORK_EVENTS.drawingStroke, { stroke });
+  }
+
+  clearDrawing() {
+    return this.send(NETWORK_EVENTS.drawingCleared);
+  }
+
+  undoDrawing() {
+    return this.send(NETWORK_EVENTS.drawingUndo);
+  }
+
+  sendChatMessage(text) {
+    return this.send(NETWORK_EVENTS.chatMessage, {
+      text: String(text || "").trim(),
+    });
+  }
+
+  sendCorrectGuess(playerId) {
+    return this.send(NETWORK_EVENTS.correctGuess, { playerId });
+  }
+
+  endRound(result) {
+    return this.send(NETWORK_EVENTS.roundEnded, { result });
+  }
+
+  requestState() {
+    return this.send(NETWORK_EVENTS.stateRequested);
+  }
 }
 
 window.BlindfoldBrushNetwork = {
-  isFirebaseConfigured,
-  saveNewRoom,
-  loadRoom,
-  changeRoom,
-  watchRoom,
-  keepPlayerOnline,
+  NETWORK_EVENTS,
+  BlindfoldBrushNetwork,
+  LocalRealtimeChannel,
+  createNetworkId,
+  createNetworkMessage,
+  isNetworkMessage,
+  normalizeNetworkRoomCode,
 };

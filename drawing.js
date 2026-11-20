@@ -11,7 +11,7 @@ const hiddenContext = hiddenCanvas.getContext("2d");
 const undoStack = [];
 const maxUndoSteps = 25;
 const roundLengthMs = 30000;
-const gridSize = 40;
+const gridPixelSize = 36;
 
 let isDrawing = false;
 let activePointerId = null;
@@ -19,7 +19,7 @@ let cursorPoint = null;
 let isRoundRevealed = false;
 let roundTimer = null;
 let selectedTool = "pen";
-let selectedColor = "#1f2937";
+let selectedColor = "#ef4444";
 let canUseDrawingTools = false;
 
 function resizeHiddenCanvas() {
@@ -63,19 +63,25 @@ function clearVisibleCanvas() {
 }
 
 function drawGrid() {
-  context.save();
-  context.strokeStyle = "#dbe3ef";
-  context.lineWidth = 1;
-  context.globalAlpha = 0.65;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / Math.max(1, rect.width);
+  const scaleY = canvas.height / Math.max(1, rect.height);
+  const horizontalStep = gridPixelSize * scaleX;
+  const verticalStep = gridPixelSize * scaleY;
 
-  for (let x = gridSize; x < canvas.width; x += gridSize) {
+  context.save();
+  context.strokeStyle = "#d5deea";
+  context.lineWidth = Math.max(1, Math.min(scaleX, scaleY));
+  context.globalAlpha = 0.72;
+
+  for (let x = horizontalStep; x < canvas.width; x += horizontalStep) {
     context.beginPath();
     context.moveTo(x, 0);
     context.lineTo(x, canvas.height);
     context.stroke();
   }
 
-  for (let y = gridSize; y < canvas.height; y += gridSize) {
+  for (let y = verticalStep; y < canvas.height; y += verticalStep) {
     context.beginPath();
     context.moveTo(0, y);
     context.lineTo(canvas.width, y);
@@ -92,6 +98,9 @@ function drawCursor() {
 
   const cursorRadius = Math.max(4, Number(sizeInput.value) / 2);
   const isErasing = selectedTool === "eraser";
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / Math.max(1, rect.width);
+  const scaleY = canvas.height / Math.max(1, rect.height);
 
   context.save();
   context.globalAlpha = isErasing ? 0.9 : 0.75;
@@ -99,7 +108,15 @@ function drawCursor() {
   context.strokeStyle = isErasing ? "#667085" : selectedColor;
   context.lineWidth = 2;
   context.beginPath();
-  context.arc(cursorPoint.x, cursorPoint.y, cursorRadius, 0, Math.PI * 2);
+  context.ellipse(
+    cursorPoint.x,
+    cursorPoint.y,
+    cursorRadius * scaleX,
+    cursorRadius * scaleY,
+    0,
+    0,
+    Math.PI * 2,
+  );
   context.fill();
   context.stroke();
   context.restore();
@@ -123,6 +140,8 @@ function renderCanvasView() {
 }
 
 function revealDrawing() {
+  window.clearTimeout(roundTimer);
+  roundTimer = null;
   isRoundRevealed = true;
   isDrawing = false;
   hiddenContext.closePath();
@@ -137,13 +156,18 @@ function revealDrawing() {
 }
 
 function startRound() {
+  prepareRound();
+  roundTimer = window.setTimeout(revealDrawing, roundLengthMs);
+}
+
+function prepareRound() {
   window.clearTimeout(roundTimer);
+  roundTimer = null;
   undoStack.length = 0;
   cursorPoint = null;
   isRoundRevealed = false;
   hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
   renderCanvasView();
-  roundTimer = window.setTimeout(revealDrawing, roundLengthMs);
 }
 
 function paintDot(point, event) {
@@ -287,6 +311,7 @@ function hideCursor() {
 function setDrawingToolsAvailable(isAvailable) {
   canUseDrawingTools = isAvailable;
   cursorPoint = null;
+  canvas.style.cursor = isAvailable ? "none" : "default";
 
   if (!isAvailable) {
     isDrawing = false;
@@ -301,9 +326,10 @@ function setDrawingToolsAvailable(isAvailable) {
 }
 
 resizeHiddenCanvas();
-startRound();
+prepareRound();
 window.BlindfoldBrushDrawing = {
   setArtistMode: setDrawingToolsAvailable,
+  prepareRound,
   resetCanvas: startRound,
   revealDrawing,
 };
@@ -552,14 +578,6 @@ function installRuntimeStyles() {
       height: 100%;
     }
 
-    .drawing-panel {
-      grid-template-rows: minmax(0, 1fr) auto;
-    }
-
-    .drawing-panel > .prompt-card {
-      display: none;
-    }
-
     @media (max-width: 850px) {
       .bb-play-area {
         grid-template-columns: 1fr;
@@ -672,7 +690,6 @@ function initializeRuntimeGame() {
     },
   });
 
-  setDrawingToolsAvailable(false);
   renderChat();
   renderLeaderboard();
 
