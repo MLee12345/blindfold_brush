@@ -53,7 +53,6 @@
       <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
         <header class="game-header">
           <div>
-            <p class="eyebrow">Round 2 of 9</p>
             <h2>Blindfold Brush</h2>
           </div>
 
@@ -101,15 +100,9 @@
                 <div class="paint-supplies">
                   <div class="color-palette" aria-label="Brush colors">
                     <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
-                    <button class="color-swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
                     <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
-                    <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
-                    <button class="color-swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e;" aria-label="Green"></button>
-                    <button class="color-swatch" type="button" data-color="#14b8a6" style="--swatch: #14b8a6;" aria-label="Teal"></button>
-                    <button class="color-swatch" type="button" data-color="#3b82f6" style="--swatch: #3b82f6;" aria-label="Blue"></button>
-                    <button class="color-swatch" type="button" data-color="#8b5cf6" style="--swatch: #8b5cf6;" aria-label="Violet"></button>
-                    <button class="color-swatch" type="button" data-color="#ec4899" style="--swatch: #ec4899;" aria-label="Pink"></button>
-                    <button class="color-swatch" type="button" data-color="#ffffff" style="--swatch: #ffffff;" aria-label="White"></button>
+                    <button class="color-swatch" type="button" data-color="#16a34a" style="--swatch: #16a34a;" aria-label="Green"></button>
+                    <button class="color-swatch" type="button" data-color="#2563eb" style="--swatch: #2563eb;" aria-label="Blue"></button>
                   </div>
 
                   <div class="tool-group" aria-label="Tools">
@@ -273,13 +266,20 @@
 
         leaderboardList.innerHTML = "";
 
+        const artist = activePlayers.find((player) => player.id === room.hostId) || activePlayers[0];
+
         rankedPlayers.forEach((player, index) => {
           const playerItem = document.createElement("li");
           const playerInfo = document.createElement("span");
           const playerName = document.createElement("strong");
+          const artistMarker = document.createElement("span");
+          const playerScore = document.createElement("span");
+          const score = playerScores.get(player.id) || 0;
+          const isArtist = Boolean(artist && player.id === artist.id);
 
           playerItem.className = `leaderboard-player${index === 0 ? " is-leading" : ""}`;
           playerItem.dataset.playerId = player.id;
+          playerItem.classList.toggle("is-artist", isArtist);
 
           if (player.id === highlightedPlayerId) {
             playerItem.classList.add("score-bump");
@@ -287,13 +287,18 @@
 
           playerInfo.className = "player-info";
           playerName.textContent = player.nickname;
+          artistMarker.className = "artist-marker";
+          artistMarker.textContent = "🖌️";
+          artistMarker.setAttribute("aria-label", "Artist");
+          artistMarker.hidden = !isArtist;
+          playerScore.className = "player-score";
+          playerScore.textContent = String(score);
 
-          playerInfo.append(playerName);
-          playerItem.append(playerInfo);
+          playerInfo.append(playerName, artistMarker);
+          playerItem.append(playerInfo, playerScore);
           leaderboardList.append(playerItem);
         });
 
-        const artist = activePlayers.find((player) => player.id === room.hostId) || activePlayers[0];
         artistLabel.textContent = `Artist: ${artist ? artist.nickname : "Waiting"}`;
       }
 
@@ -324,6 +329,7 @@
 
         renderLeaderboard(room);
         updateStartGameButton(room);
+        window.BlindfoldBrushDrawing?.setArtistMode(room.phase === roomApi.ROOM_PHASES.inGame && room.hostId === currentPlayer.id);
 
         if (room.phase === roomApi.ROOM_PHASES.inGame && previousPhase !== roomApi.ROOM_PHASES.inGame) {
           clearCanvasButton.click();
@@ -333,6 +339,7 @@
         if (room.phase === roomApi.ROOM_PHASES.lobby) {
           stopRoundTimer();
           updateRoundTimerDisplay(roundLengthSeconds);
+          window.BlindfoldBrushDrawing?.setArtistMode(false);
         }
       }
 
