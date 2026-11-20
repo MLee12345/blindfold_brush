@@ -64,7 +64,7 @@ function clearVisibleCanvas() {
 
 function drawGrid() {
   context.save();
-  context.strokeStyle = "#d7e0ef";
+  context.strokeStyle = "#dbe3ef";
   context.lineWidth = 1;
   context.globalAlpha = 0.65;
 
@@ -116,7 +116,10 @@ function renderCanvasView() {
   if (canUseDrawingTools) {
     drawGrid();
     drawCursor();
+    return;
   }
+
+  context.drawImage(hiddenCanvas, 0, 0);
 }
 
 function revealDrawing() {
@@ -293,11 +296,17 @@ function setDrawingToolsAvailable(isAvailable) {
   }
 
   document.querySelector(".controls").hidden = !isAvailable;
+  document.querySelector(".toolbar").hidden = !isAvailable;
   renderCanvasView();
 }
 
 resizeHiddenCanvas();
 startRound();
+window.BlindfoldBrushDrawing = {
+  setArtistMode: setDrawingToolsAvailable,
+  resetCanvas: startRound,
+  revealDrawing,
+};
 canvas.addEventListener("pointerdown", startDrawing);
 canvas.addEventListener("pointermove", draw);
 canvas.addEventListener("pointermove", moveCursor);
@@ -353,7 +362,7 @@ function installRuntimeStyles() {
 
   style.textContent = `
     .bb-room-bar {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
@@ -391,10 +400,13 @@ function installRuntimeStyles() {
     }
 
     .bb-play-area {
+      flex: 1;
       min-height: 0;
       display: grid;
-      grid-template-columns: 180px minmax(0, 1fr) 250px;
+      grid-template-columns: max-content minmax(0, 1fr);
       gap: 12px;
+      height: 100%;
+      align-items: stretch;
     }
 
     .bb-panel {
@@ -429,7 +441,8 @@ function installRuntimeStyles() {
     }
 
     .bb-leaderboard-row {
-      display: inline-flex;
+      display: inline-grid;
+      grid-template-columns: auto auto;
       align-items: center;
       justify-content: flex-start;
       gap: 8px;
@@ -445,13 +458,14 @@ function installRuntimeStyles() {
       white-space: nowrap;
     }
 
-    .bb-leaderboard-row strong {
+    .bb-leaderboard-name,
+    .bb-leaderboard-score {
       font: inherit;
       font-weight: 400;
     }
 
     .bb-chat-panel {
-      display: grid;
+      display: none;
       grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 8px;
     }
@@ -513,22 +527,37 @@ function installRuntimeStyles() {
     .bb-prompt-button {
       min-height: 34px;
       border-radius: 6px;
-      background: #8b5cf6;
+      background: #2563eb;
     }
 
     .bb-prompt-button:hover {
-      background: #7c3aed;
+      background: #1d4ed8;
     }
 
     .bb-center-column {
       min-width: 0;
       min-height: 0;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr);
     }
 
     .bb-canvas-stage {
+      width: 100%;
+      height: 100%;
       min-height: 0;
+    }
+
+    .bb-canvas-stage canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .drawing-panel {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .drawing-panel > .prompt-card {
+      display: none;
     }
 
     @media (max-width: 850px) {
@@ -546,10 +575,6 @@ function installRuntimeStyles() {
 }
 
 function initializeRuntimeGame() {
-  const app = document.querySelector(".app");
-  const toolbar = document.querySelector(".toolbar");
-  const canvasStage = document.querySelector(".canvas-stage");
-  const controls = document.querySelector(".controls");
   const localPlayerId = `player-${Date.now()}`;
 
   let currentPlayer = null;
@@ -596,10 +621,8 @@ function initializeRuntimeGame() {
   leaderboardPanel.append(leaderboardTitle, leaderboardList);
   chatForm.append(chatInput, chatButton);
   chatPanel.append(chatTitle, chatMessages, chatForm);
-  centerColumn.append(roundInfo, promptPicker, canvasStage);
+  centerColumn.append(roundInfo, promptPicker);
   playArea.append(leaderboardPanel, centerColumn, chatPanel);
-  toolbar.after(roomBar);
-  roomBar.after(playArea);
 
   const chat = new window.BlindfoldBrushChat({
     onMessage: renderChat,
@@ -685,6 +708,7 @@ function initializeRuntimeGame() {
     game.addPlayer(currentPlayer);
     scoring.setPlayers([currentPlayer]);
     chat.reset();
+    clearPageChatMessages();
     renderChat();
     renderLeaderboard();
     chatInput.disabled = false;
@@ -854,11 +878,43 @@ function initializeRuntimeGame() {
 
     leaderboardRows.forEach((player) => {
       const row = createElement("li", "bb-leaderboard-row");
-      const name = createElement("span", "", `${player.rank}. ${player.playerName}`);
-      const score = createElement("strong", "", String(player.totalPoints));
+      const name = createElement("span", "bb-leaderboard-name", `${player.rank}. ${player.playerName}`);
+      const score = createElement("span", "bb-leaderboard-score", String(player.totalPoints));
       row.append(name, score);
       leaderboardList.append(row);
     });
+  }
+
+  function resetRuntimeRoom() {
+    roomCreated = false;
+    currentPlayer = null;
+    latestGameState = null;
+    latestRoundResult = null;
+    chat.reset();
+    clearPageChatMessages();
+    renderChat();
+    setDrawingToolsAvailable(false);
+    chatInput.disabled = true;
+    chatButton.disabled = true;
+    startGameButton.disabled = true;
+    roomCodeInput.hidden = false;
+    joinRoomButton.hidden = false;
+    generatedRoomCode.textContent = "Room: ----";
+    hintText.textContent = "Create a room to start.";
+    timerText.textContent = "";
+    promptPicker.hidden = true;
+    roundInfo.hidden = true;
+  }
+
+  function clearPageChatMessages() {
+    const pageChatMessages = document.querySelector(".chat-messages");
+    const pageGuessInput = document.querySelector("#guessInput");
+
+    pageChatMessages?.replaceChildren();
+
+    if (pageGuessInput) {
+      pageGuessInput.value = "";
+    }
   }
 
   function renderChat() {
@@ -888,6 +944,8 @@ function initializeRuntimeGame() {
   joinRoomButton.addEventListener("click", joinRoom);
   addPlayerButton.addEventListener("click", addTestPlayer);
   startGameButton.addEventListener("click", startGameFromRoom);
+  document.querySelector("#leaveRoomButton")?.addEventListener("click", resetRuntimeRoom);
+  document.querySelector("#createRoomButton")?.addEventListener("click", clearPageChatMessages);
   chatForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
