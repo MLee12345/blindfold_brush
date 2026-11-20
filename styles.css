@@ -38,13 +38,11 @@ body {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 8% 12%, rgba(249, 115, 22, 0.34), transparent 12rem),
-    radial-gradient(circle at 86% 8%, rgba(37, 99, 235, 0.34), transparent 15rem),
-    radial-gradient(circle at 18% 92%, rgba(100, 116, 139, 0.2), transparent 14rem),
-    radial-gradient(circle at 92% 88%, rgba(22, 163, 74, 0.28), transparent 13rem),
-    linear-gradient(135deg, rgba(100, 116, 139, 0.08) 25%, transparent 25%) 0 0 / 34px 34px,
-    linear-gradient(225deg, rgba(249, 115, 22, 0.08) 25%, transparent 25%) 0 0 / 34px 34px,
-    linear-gradient(180deg, #fff7ed 0%, #eff6ff 45%, #f0fdf4 100%);
+    radial-gradient(circle at 0% 0%, rgba(249, 115, 22, 0.2), transparent 24rem),
+    radial-gradient(circle at 100% 4%, rgba(37, 99, 235, 0.2), transparent 26rem),
+    radial-gradient(circle at 8% 100%, rgba(100, 116, 139, 0.16), transparent 24rem),
+    radial-gradient(circle at 100% 100%, rgba(22, 163, 74, 0.18), transparent 24rem),
+    linear-gradient(135deg, #f8fbff 0%, #eefaf7 48%, #fff8f0 100%);
   color: var(--ink);
 }
 
@@ -322,6 +320,7 @@ input[type="range"] {
 .round-status {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   padding: 10px 14px;
   border: 2px solid rgba(249, 115, 22, 0.58);
@@ -511,14 +510,14 @@ input[type="range"] {
 
 .drawing-panel {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   overflow: hidden;
   padding: 12px 14px;
 }
 
 .prompt-card {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -529,14 +528,47 @@ input[type="range"] {
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.18), rgba(37, 99, 235, 0.08));
 }
 
+.prompt-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 .prompt-card .eyebrow {
   margin: 0;
 }
 
 .prompt-card strong {
   color: var(--ink);
-  font-size: 18px;
+  font-size: 14px;
   letter-spacing: 0;
+  white-space: pre-wrap;
+}
+
+.prompt-options {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.prompt-option {
+  min-height: 34px;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: var(--blue);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.prompt-option:hover {
+  background: var(--blue-dark);
 }
 
 .canvas-stage {
@@ -572,11 +604,13 @@ canvas {
 }
 
 .controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(120px, 1fr) auto auto;
+  grid-template-areas:
+    "palette palette palette palette palette"
+    "tools size-label size-slider undo clear";
   align-items: center;
-  justify-content: flex-end;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .paint-supplies,
@@ -588,14 +622,36 @@ canvas {
 }
 
 .paint-supplies {
-  align-items: flex-start;
-  flex-direction: column;
+  display: contents;
+}
+
+.color-palette {
+  grid-area: palette;
+  justify-content: center;
+}
+
+.controls > label {
+  grid-area: size-label;
+}
+
+#brushSize {
+  grid-area: size-slider;
+  width: 100%;
 }
 
 .tool-group {
+  grid-area: tools;
   align-self: center;
   flex-direction: row;
   gap: 16px;
+}
+
+#undoCanvas {
+  grid-area: undo;
+}
+
+#clearCanvas {
+  grid-area: clear;
 }
 
 .tool-button {
@@ -827,8 +883,10 @@ canvas {
   }
 
   .controls {
+    display: flex;
     justify-content: flex-start;
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .prompt-card {

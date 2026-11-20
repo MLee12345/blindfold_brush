@@ -37,19 +37,6 @@
         </div>
       </section>
 
-      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
-        <div>
-          <p class="eyebrow">Room code</p>
-          <h2 id="roomCodeTitle">----</h2>
-          <p id="roomStatus">Share this code so people can connect.</p>
-        </div>
-
-        <div>
-          <p class="eyebrow">Players</p>
-          <ul id="playerList"></ul>
-        </div>
-      </section>
-
       <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
         <header class="game-header">
           <div>
@@ -63,11 +50,9 @@
             </div>
 
             <div class="round-status" aria-label="Round timer">
-              <span>Artist: Waiting</span>
-              <strong>00:30</strong>
+              <strong>--:--</strong>
             </div>
 
-            <button id="startGameButton" class="start-game-button" type="button" disabled>Need Players</button>
             <button id="leaveRoomButton" class="leave-room-button" type="button">Leave Room</button>
           </div>
         </header>
@@ -83,26 +68,31 @@
           </aside>
 
           <section class="drawing-panel" aria-label="Drawing area">
-            <div class="prompt-card">
-              <p class="eyebrow">Guessing hint</p>
-              <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+            <div id="promptCard" class="prompt-card" hidden>
+              <div>
+                <p id="promptLabel" class="eyebrow">Choose a word</p>
+                <strong id="promptHint" aria-live="polite"></strong>
+              </div>
+              <div id="promptOptions" class="prompt-options"></div>
             </div>
 
             <div class="canvas-stage">
               <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
             </div>
 
-            <section class="toolbar" aria-label="Drawing tools">
+            <section class="toolbar" aria-label="Drawing tools" hidden>
               <div class="controls" role="toolbar" aria-label="Drawing tools">
-                <label for="brushColor">Color</label>
-                <input id="brushColor" type="color" value="#1f2937">
-
                 <div class="paint-supplies">
                   <div class="color-palette" aria-label="Brush colors">
-                    <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
+                    <button class="color-swatch is-active" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
                     <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
+                    <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
                     <button class="color-swatch" type="button" data-color="#16a34a" style="--swatch: #16a34a;" aria-label="Green"></button>
+                    <button class="color-swatch" type="button" data-color="#06b6d4" style="--swatch: #06b6d4;" aria-label="Cyan"></button>
                     <button class="color-swatch" type="button" data-color="#2563eb" style="--swatch: #2563eb;" aria-label="Blue"></button>
+                    <button class="color-swatch" type="button" data-color="#4f46e5" style="--swatch: #4f46e5;" aria-label="Indigo"></button>
+                    <button class="color-swatch" type="button" data-color="#9333ea" style="--swatch: #9333ea;" aria-label="Violet"></button>
+                    <button class="color-swatch" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
                   </div>
 
                   <div class="tool-group" aria-label="Tools">
@@ -133,7 +123,7 @@
             <div class="chat-messages" aria-live="polite"></div>
 
             <form id="chatForm" class="chat-form">
-              <label for="guessInput">Guess</label>
+              <label for="guessInput">Message</label>
               <div class="chat-input-row">
                 <input id="guessInput" type="text" placeholder="Type a guess">
                 <button type="submit">Send</button>
@@ -148,7 +138,6 @@
     <script>
       const roomApi = window.BlindfoldBrushRooms;
       const mainMenu = document.querySelector("#mainMenu");
-      const roomLobby = document.querySelector("#roomLobby");
       const gameArea = document.querySelector("#gameArea");
       const nicknameInput = document.querySelector("#nicknameInput");
       const roomCodeInput = document.querySelector("#roomCodeInput");
@@ -157,35 +146,67 @@
       const joinRoomPanel = document.querySelector("#joinRoomPanel");
       const confirmJoinRoomButton = document.querySelector("#confirmJoinRoomButton");
       const cancelJoinRoomButton = document.querySelector("#cancelJoinRoomButton");
-      const startGameButton = document.querySelector("#startGameButton");
       const leaveRoomButton = document.querySelector("#leaveRoomButton");
       const roomMessage = document.querySelector("#roomMessage");
-      const roomCodeTitle = document.querySelector("#roomCodeTitle");
-      const roomStatus = document.querySelector("#roomStatus");
-      const playerList = document.querySelector("#playerList");
       const chatForm = document.querySelector("#chatForm");
       const chatMessages = document.querySelector(".chat-messages");
       const guessInput = document.querySelector("#guessInput");
       const roundStatus = document.querySelector(".round-status");
-      const artistLabel = document.querySelector(".round-status span");
       const timerDisplay = document.querySelector(".round-status strong");
-      const clearCanvasButton = document.querySelector("#clearCanvas");
       const leaderboardList = document.querySelector(".leaderboard-list");
       const activeRoomCode = document.querySelector("#activeRoomCode");
+      const promptCard = document.querySelector("#promptCard");
+      const promptLabel = document.querySelector("#promptLabel");
+      const promptHint = document.querySelector("#promptHint");
+      const promptOptions = document.querySelector("#promptOptions");
       const currentRoomKey = "blindfold-brush-current-room";
       const currentPlayerKey = "blindfold-brush-current-player";
-      const correctAnswer = "pizza planet";
       const roundLengthSeconds = 30;
-      const requiredPlayerCount = roomApi?.MIN_ACTIVE_PLAYERS || 2;
+      const resultsLengthSeconds = 5;
+      const promptPool = [
+        "Apple",
+        "Ball",
+        "Boat",
+        "Book",
+        "Bus",
+        "Cake",
+        "Car",
+        "Cat",
+        "Cloud",
+        "Crown",
+        "Dog",
+        "Door",
+        "Duck",
+        "Eye",
+        "Fish",
+        "Flower",
+        "Fork",
+        "Hat",
+        "House",
+        "Key",
+        "Moon",
+        "Mug",
+        "Pencil",
+        "Pizza",
+        "Rainbow",
+        "Shoe",
+        "Star",
+        "Sun",
+        "Tree",
+        "Train",
+        "Umbrella",
+        "Whale",
+      ];
 
       let roomManager = null;
       let currentPlayer = null;
       let activeRoom = null;
       let activeRoomPhase = "lobby";
-      let localScore = 0;
       let uiTimerId = null;
       let roomRefreshTimerId = null;
-      let roundSecondsRemaining = roundLengthSeconds;
+      let timerTarget = null;
+      let expiredTimerTarget = null;
+      let renderedChatSignature = "";
       const playerScores = new Map();
 
       function showRoomMessage(message) {
@@ -225,29 +246,35 @@
       }
 
       function getActivePlayers(room) {
-        return room.players.filter((player) => player.isActive && !player.isSpectator);
+        return room.players.filter((player) => player.isActive);
       }
 
-      function canStartCurrentRoom(room) {
-        return (
-          room.hostId === currentPlayer.id &&
-          room.phase === roomApi.ROOM_PHASES.lobby &&
-          getActivePlayers(room).length >= requiredPlayerCount
-        );
+      function getArtist(room) {
+        const artistId = room.currentArtistId || room.hostId;
+
+        return getActivePlayers(room).find((player) => player.id === artistId) || getActivePlayers(room)[0] || null;
       }
 
-      function updateStartGameButton(room) {
-        const activePlayerCount = getActivePlayers(room).length;
-        const isHost = room.hostId === currentPlayer.id;
-        const isWaitingToStart = room.phase === roomApi.ROOM_PHASES.lobby;
+      function createPromptOptions() {
+        return [...promptPool]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3);
+      }
 
-        startGameButton.hidden = !isHost || !isWaitingToStart;
-        startGameButton.disabled = !canStartCurrentRoom(room);
-        startGameButton.textContent = startGameButton.disabled
-          ? `Need ${requiredPlayerCount} Players`
-          : "Start Game";
+      function createLiveRoom(room) {
+        const artist = getActivePlayers(room).find((player) => player.id === room.hostId) || getActivePlayers(room)[0];
 
-        startGameButton.setAttribute("aria-label", `${activePlayerCount} of ${requiredPlayerCount} players joined`);
+        return roomManager.save({
+          ...room,
+          phase: roomApi.ROOM_PHASES.inGame,
+          currentArtistId: artist?.id || null,
+          promptOptions: createPromptOptions(),
+          selectedPrompt: null,
+          roundStartedAt: null,
+          roundEndsAt: null,
+          resultsEndsAt: null,
+          updatedAt: Date.now(),
+        });
       }
 
       function renderLeaderboard(room, { highlightedPlayerId = null } = {}) {
@@ -266,7 +293,7 @@
 
         leaderboardList.innerHTML = "";
 
-        const artist = activePlayers.find((player) => player.id === room.hostId) || activePlayers[0];
+        const artist = getArtist(room);
 
         rankedPlayers.forEach((player, index) => {
           const playerItem = document.createElement("li");
@@ -299,7 +326,6 @@
           leaderboardList.append(playerItem);
         });
 
-        artistLabel.textContent = `Artist: ${artist ? artist.nickname : "Waiting"}`;
       }
 
       function renderRoom(room) {
@@ -309,41 +335,134 @@
         activeRoomPhase = room.phase;
         document.body.classList.add("is-in-room");
         mainMenu.hidden = true;
-        roomLobby.hidden = true;
         gameArea.hidden = false;
-        gameArea.classList.toggle("is-game-started", room.phase !== roomApi.ROOM_PHASES.lobby);
-        roomCodeTitle.textContent = room.code;
         activeRoomCode.textContent = room.code;
-        roomStatus.textContent = room.hostId === currentPlayer.id
-          ? "Share this four-letter code so people can connect."
-          : "You joined the room.";
-        playerList.innerHTML = "";
-
-        room.players
-          .filter((player) => player.isActive)
-          .forEach((player) => {
-            const playerItem = document.createElement("li");
-            playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
-            playerList.append(playerItem);
-          });
+        gameArea.classList.add("is-game-started");
 
         renderLeaderboard(room);
-        updateStartGameButton(room);
-        window.BlindfoldBrushDrawing?.setArtistMode(room.phase === roomApi.ROOM_PHASES.inGame && room.hostId === currentPlayer.id);
+        renderPromptState(room);
+        renderRoomChat(room);
 
-        if (room.phase === roomApi.ROOM_PHASES.inGame && previousPhase !== roomApi.ROOM_PHASES.inGame) {
-          clearCanvasButton.click();
-          startRoundTimer();
+        const isArtist = getArtist(room)?.id === currentPlayer.id;
+        window.BlindfoldBrushDrawing?.setArtistMode(isArtist);
+        guessInput.disabled = false;
+        guessInput.placeholder = isArtist ? "Chat while drawing" : "Type a guess";
+
+        if (previousPhase !== roomApi.ROOM_PHASES.inGame && room.phase === roomApi.ROOM_PHASES.inGame) {
+          window.BlindfoldBrushDrawing?.prepareRound();
         }
 
-        if (room.phase === roomApi.ROOM_PHASES.lobby) {
-          stopRoundTimer();
-          updateRoundTimerDisplay(roundLengthSeconds);
-          window.BlindfoldBrushDrawing?.setArtistMode(false);
-        }
+        syncRoundTimer(room);
       }
 
-      function appendChatMessage(playerName, message, { isSystem = false } = {}) {
+      function renderPromptState(room) {
+        const artist = getArtist(room);
+        const isArtist = artist?.id === currentPlayer.id;
+        const selectedPrompt = String(room.selectedPrompt || "").trim();
+        const options = Array.isArray(room.promptOptions) ? room.promptOptions : [];
+        const isShowingResults = Number(room.resultsEndsAt) > Date.now() && selectedPrompt;
+
+        promptOptions.replaceChildren();
+        promptCard.hidden = false;
+
+        if (isShowingResults) {
+          promptLabel.textContent = "Answer";
+          promptHint.textContent = selectedPrompt;
+          return;
+        }
+
+        if (!selectedPrompt) {
+          promptLabel.textContent = isArtist ? "Choose a word" : `${artist?.nickname || "The artist"} is choosing a word`;
+          promptHint.textContent = isArtist ? "" : "Waiting for the artist";
+
+          if (isArtist) {
+            options.forEach((prompt) => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "prompt-option";
+              button.textContent = prompt;
+              button.addEventListener("click", () => choosePrompt(prompt));
+              promptOptions.append(button);
+            });
+          }
+
+          return;
+        }
+
+        const elapsedSeconds = room.roundStartedAt
+          ? Math.max(0, Math.floor((Date.now() - room.roundStartedAt) / 1000))
+          : 0;
+
+        promptLabel.textContent = isArtist ? "Your word" : "Guessing hint";
+        promptHint.textContent = isArtist ? selectedPrompt : createHint(selectedPrompt, elapsedSeconds);
+      }
+
+      function createHint(prompt, elapsedSeconds = 0) {
+        const characters = String(prompt || "").split("");
+        const letterIndexes = characters
+          .map((character, index) => ({ character, index }))
+          .filter(({ character }) => /[a-z0-9]/i.test(character))
+          .map(({ index }) => index);
+        const revealCount = Math.min(Math.floor(elapsedSeconds / 10), Math.max(0, letterIndexes.length - 1));
+        const revealedIndexes = new Set(letterIndexes.slice(0, revealCount));
+
+        return characters
+          .map((character, index) => {
+            if (!/[a-z0-9]/i.test(character)) {
+              return character === " " ? "   " : character;
+            }
+
+            return revealedIndexes.has(index) ? character : "_";
+          })
+          .join(" ");
+      }
+
+      function choosePrompt(prompt) {
+        if (!activeRoom || getArtist(activeRoom)?.id !== currentPlayer.id || activeRoom.selectedPrompt) {
+          return;
+        }
+
+        const now = Date.now();
+        const nextRoom = roomManager.save({
+          ...activeRoom,
+          phase: roomApi.ROOM_PHASES.inGame,
+          currentArtistId: currentPlayer.id,
+          selectedPrompt: prompt,
+          promptOptions: [],
+          roundStartedAt: now,
+          roundEndsAt: now + roundLengthSeconds * 1000,
+          resultsEndsAt: null,
+          updatedAt: now,
+        });
+
+        window.BlindfoldBrushDrawing?.prepareRound();
+        renderRoom(nextRoom);
+      }
+
+      function renderRoomChat(room) {
+        const messages = room.messages || [];
+        const chatSignature = messages
+          .map((message) => `${message.id || ""}:${message.type || "chat"}:${message.playerName || ""}:${message.text || ""}`)
+          .join("|");
+
+        if (chatSignature === renderedChatSignature) {
+          return;
+        }
+
+        renderedChatSignature = chatSignature;
+        chatMessages.replaceChildren();
+
+        messages.forEach((message) => {
+          appendChatMessage(message.playerName, message.text, {
+            isSystem: message.type === "system",
+            shouldScroll: false,
+          });
+        });
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function appendChatMessage(playerName, message, { isSystem = false, shouldScroll = true } = {}) {
         const chatMessage = document.createElement("p");
         chatMessage.className = isSystem ? "chat-message system-message" : "chat-message";
 
@@ -356,11 +475,18 @@
         }
 
         chatMessages.append(chatMessage);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (shouldScroll) {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
       }
 
       function formatRoundTime(seconds) {
-        return `00:${String(Math.max(0, seconds)).padStart(2, "0")}`;
+        if (!Number.isFinite(seconds)) {
+          return "--:--";
+        }
+
+        const safeSeconds = Math.max(0, Math.floor(seconds));
+        return `${String(Math.floor(safeSeconds / 60)).padStart(2, "0")}:${String(safeSeconds % 60).padStart(2, "0")}`;
       }
 
       function updateRoundTimerDisplay(seconds) {
@@ -371,6 +497,7 @@
       function stopRoundTimer() {
         window.clearInterval(uiTimerId);
         uiTimerId = null;
+        timerTarget = null;
       }
 
       function startRoomRefresh(roomCode) {
@@ -390,27 +517,101 @@
         roomRefreshTimerId = null;
       }
 
-      function startRoundTimer() {
+      function syncRoundTimer(room) {
+        const now = Date.now();
+        const roundEndsAt = Number(room.roundEndsAt) || null;
+        const resultsEndsAt = Number(room.resultsEndsAt) || null;
+
+        if (!roundEndsAt) {
+          stopRoundTimer();
+          updateRoundTimerDisplay(null);
+          return;
+        }
+
+        if (resultsEndsAt && resultsEndsAt <= now) {
+          stopRoundTimer();
+          advanceToNextTurn(room);
+          return;
+        }
+
+        if (roundEndsAt <= now && !resultsEndsAt) {
+          const resultsRoom = beginRoundResults(room);
+          syncRoundTimer(resultsRoom);
+          return;
+        }
+
+        const target = resultsEndsAt || roundEndsAt;
+        const showingResults = Boolean(resultsEndsAt);
+        expiredTimerTarget = null;
+
+        if (timerTarget === target && uiTimerId) {
+          updateRoundTimerDisplay(Math.ceil((target - now) / 1000));
+          return;
+        }
+
         stopRoundTimer();
-        roundSecondsRemaining = roundLengthSeconds;
-        updateRoundTimerDisplay(roundSecondsRemaining);
+        timerTarget = target;
 
-        uiTimerId = window.setInterval(() => {
-          roundSecondsRemaining -= 1;
-          updateRoundTimerDisplay(roundSecondsRemaining);
-
-          if (roundSecondsRemaining <= 0) {
-            stopRoundTimer();
-            appendChatMessage("", "Time is up. The drawing is revealed.", { isSystem: true });
+        const tick = () => {
+          const secondsRemaining = Math.ceil((target - Date.now()) / 1000);
+          updateRoundTimerDisplay(secondsRemaining);
+          if (showingResults) {
+            renderPromptState(activeRoom || room);
           }
-        }, 1000);
+
+          if (secondsRemaining <= 0) {
+            syncRoundTimer(activeRoom || room);
+          }
+        };
+
+        tick();
+        uiTimerId = window.setInterval(tick, 50);
+      }
+
+      function beginRoundResults(room) {
+        const resultsEndsAt = Date.now() + resultsLengthSeconds * 1000;
+        const resultsRoom = saveRoomMessage({
+          ...room,
+          resultsEndsAt,
+          updatedAt: Date.now(),
+        }, "", "Time is up. Enjoy the drawing!", "system");
+
+        activeRoom = resultsRoom;
+        window.BlindfoldBrushDrawing?.revealDrawing();
+        renderRoomChat(resultsRoom);
+        renderPromptState(resultsRoom);
+        return resultsRoom;
+      }
+
+      function advanceToNextTurn(room) {
+        if (expiredTimerTarget === room.resultsEndsAt) {
+          return;
+        }
+
+        expiredTimerTarget = room.resultsEndsAt;
+        const players = getActivePlayers(room);
+        const currentArtist = getArtist(room);
+        const currentArtistIndex = players.findIndex((player) => player.id === currentArtist?.id);
+        const nextArtist = players[(currentArtistIndex + 1 + players.length) % players.length] || currentArtist;
+        const nextRoom = roomManager.save({
+          ...room,
+          currentArtistId: nextArtist?.id || null,
+          promptOptions: createPromptOptions(),
+          selectedPrompt: null,
+          roundStartedAt: null,
+          roundEndsAt: null,
+          resultsEndsAt: null,
+          updatedAt: Date.now(),
+        });
+
+        activeRoom = nextRoom;
+        window.BlindfoldBrushDrawing?.prepareRound();
+        renderRoom(nextRoom);
       }
 
       function updateLocalScore(points) {
-        const currentScore = playerScores.get(currentPlayer.id) || localScore;
-
-        localScore = currentScore + points;
-        playerScores.set(currentPlayer.id, localScore);
+        const currentScore = playerScores.get(currentPlayer.id) || 0;
+        playerScores.set(currentPlayer.id, currentScore + points);
 
         if (activeRoom) {
           renderLeaderboard(activeRoom, { highlightedPlayerId: currentPlayer.id });
@@ -422,23 +623,98 @@
         }
       }
 
-      function leaveCurrentRoom() {
-        const roomCode = window.localStorage.getItem(currentRoomKey);
+      function saveRoomMessage(room, playerName, message, type = "chat") {
+        const messages = [...(room.messages || []), {
+          id: `message-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          playerName,
+          text: message,
+          type,
+          createdAt: Date.now(),
+        }];
 
-        if (roomCode) {
-          roomManager.leave(roomCode, currentPlayer.id);
+        return roomManager.save({
+          ...room,
+          messages: messages.slice(-100),
+          updatedAt: Date.now(),
+        });
+      }
+
+      chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!activeRoom) {
+          return;
         }
 
-        window.localStorage.removeItem(currentRoomKey);
+        const guess = guessInput.value.trim();
+
+        if (!guess) {
+          return;
+        }
+
+        const playerName = currentPlayer.nickname;
+        const isArtist = getArtist(activeRoom)?.id === currentPlayer.id;
+        const selectedPrompt = String(activeRoom.selectedPrompt || "").trim();
+        const isCorrect = !isArtist && selectedPrompt && guess.toLowerCase() === selectedPrompt.toLowerCase();
+        let nextRoom = saveRoomMessage(activeRoom, playerName, guess);
+        guessInput.value = "";
+
+        if (isCorrect) {
+          updateLocalScore(80);
+          const artist = getArtist(nextRoom);
+
+          if (artist && artist.id !== currentPlayer.id) {
+            playerScores.set(artist.id, (playerScores.get(artist.id) || 0) + 40);
+          }
+
+          nextRoom = saveRoomMessage(nextRoom, "", `${playerName} guessed correctly!`, "system");
+        }
+
+        renderRoom(nextRoom);
+      });
+
+      function initializeRoom(room) {
+        const liveRoom = room.phase === roomApi.ROOM_PHASES.inGame && room.currentArtistId
+          ? room
+          : createLiveRoom(room);
+
+        window.localStorage.setItem(currentRoomKey, liveRoom.code);
+        renderRoom(liveRoom);
+        startRoomRefresh(liveRoom.code);
+      }
+
+      function resetVisibleChat() {
+        renderedChatSignature = "";
+        chatMessages.replaceChildren();
+        guessInput.value = "";
+      }
+
+      function clearRoomState() {
         activeRoom = null;
         activeRoomPhase = roomApi.ROOM_PHASES.lobby;
-        document.body.classList.remove("is-in-room");
+        resetVisibleChat();
         stopRoomRefresh();
         stopRoundTimer();
-        roomLobby.hidden = true;
+        window.BlindfoldBrushDrawing?.prepareRound();
+      }
+
+      function finishRoomExit() {
+        clearRoomState();
+        window.localStorage.removeItem(currentRoomKey);
+        document.body.classList.remove("is-in-room");
         gameArea.hidden = true;
         mainMenu.hidden = false;
         hideJoinRoomPanel();
+      }
+
+      function leaveCurrentRoom() {
+        const roomCode = window.localStorage.getItem(currentRoomKey);
+
+        if (roomCode && roomManager) {
+          roomManager.leave(roomCode, currentPlayer.id);
+        }
+
+        finishRoomExit();
       }
 
       function joinRequestedRoom() {
@@ -451,47 +727,60 @@
 
         try {
           const room = roomManager.join(roomCode, getCurrentPlayer());
-          window.localStorage.setItem(currentRoomKey, room.code);
           showRoomMessage("");
-          renderRoom(room);
-          startRoomRefresh(room.code);
+          initializeRoom(room);
         } catch (error) {
           showRoomMessage("Room not found. Check the code and try again.");
         }
       }
 
-      function startCurrentGame() {
-        if (!activeRoom || !canStartCurrentRoom(activeRoom)) {
-          return;
-        }
-
-        const startedRoom = roomManager.save({
-          ...activeRoom,
-          phase: roomApi.ROOM_PHASES.inGame,
-          updatedAt: Date.now(),
-        });
-
-        renderRoom(startedRoom);
+      function createCurrentRoom() {
+        const room = roomManager.create(getCurrentPlayer());
+        showRoomMessage("");
+        hideJoinRoomPanel();
+        initializeRoom(room);
       }
 
-      chatForm.addEventListener("submit", (event) => {
-        event.preventDefault();
+      function updatePageForRoomExit() {
+        roomMessage.textContent = "";
+        resetVisibleChat();
+      }
 
-        const guess = guessInput.value.trim();
+      function handleCreateRoom() {
+        updatePageForRoomExit();
+        createCurrentRoom();
+      }
 
-        if (!guess) {
-          return;
-        }
+      function handleJoinRoom() {
+        showJoinRoomPanel();
+      }
 
-        const playerName = nicknameInput.value.trim() || "Player";
-        appendChatMessage(playerName, guess);
-        guessInput.value = "";
+      function handleLeaveRoom() {
+        leaveCurrentRoom();
+        updatePageForRoomExit();
+      }
 
-        if (guess.toLowerCase() === correctAnswer) {
-          appendChatMessage("", `${playerName} guessed correctly.`, { isSystem: true });
-          updateLocalScore(80);
-        }
-      });
+      function handleConfirmJoinRoom() {
+        joinRequestedRoom();
+      }
+
+      function handleCancelJoinRoom() {
+        hideJoinRoomPanel();
+        showRoomMessage("");
+      }
+
+      function bindRoomControls() {
+        createRoomButton.addEventListener("click", handleCreateRoom);
+        joinRoomButton.addEventListener("click", handleJoinRoom);
+        confirmJoinRoomButton.addEventListener("click", handleConfirmJoinRoom);
+        cancelJoinRoomButton.addEventListener("click", handleCancelJoinRoom);
+        roomCodeInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            joinRequestedRoom();
+          }
+        });
+        leaveRoomButton.addEventListener("click", handleLeaveRoom);
+      }
 
       if (!roomApi) {
         showRoomMessage("Room code helpers are not loaded yet.");
@@ -504,37 +793,7 @@
           roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value);
         });
 
-        createRoomButton.addEventListener("click", () => {
-          const room = roomManager.create(getCurrentPlayer());
-          window.localStorage.setItem(currentRoomKey, room.code);
-          showRoomMessage("");
-          hideJoinRoomPanel();
-          renderRoom(room);
-          startRoomRefresh(room.code);
-        });
-
-        joinRoomButton.addEventListener("click", () => {
-          showJoinRoomPanel();
-        });
-
-        confirmJoinRoomButton.addEventListener("click", () => {
-          joinRequestedRoom();
-        });
-
-        cancelJoinRoomButton.addEventListener("click", () => {
-          hideJoinRoomPanel();
-          showRoomMessage("");
-        });
-
-        startGameButton.addEventListener("click", startCurrentGame);
-
-        roomCodeInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            joinRequestedRoom();
-          }
-        });
-
-        leaveRoomButton.addEventListener("click", leaveCurrentRoom);
+        bindRoomControls();
         window.localStorage.removeItem(currentRoomKey);
       }
     </script>
