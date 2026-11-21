@@ -12,49 +12,49 @@
         <div>
           <p class="eyebrow">Private drawing rooms</p>
           <h1 id="mainTitle">Blindfold Brush</h1>
-          <p>Create a room or join your friends with a four-letter code.</p>
+          <p>Enter your name, then create a new room or join your friends.</p>
         </div>
 
         <div class="room-controls">
-          <label for="nicknameInput">Nickname</label>
+          <label for="nicknameInput">Your name</label>
           <input id="nicknameInput" type="text" maxlength="18" value="Player" autocomplete="nickname">
 
-          <label for="roomCodeInput">Room code</label>
-          <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
-
           <div class="button-row">
-            <button id="createRoomButton" type="button">Create Room</button>
-            <button id="joinRoomButton" type="button">Join Room</button>
+            <button id="createRoomButton" type="button">Create a Room</button>
+            <button id="joinRoomButton" type="button">Join a Room</button>
+          </div>
+
+          <div id="joinRoomPanel" class="join-room-panel" hidden>
+            <label for="roomCodeInput">Room code</label>
+            <div class="join-code-row">
+              <input id="roomCodeInput" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+              <button id="confirmJoinRoomButton" type="button">Enter</button>
+              <button id="cancelJoinRoomButton" class="secondary-button" type="button">Back</button>
+            </div>
           </div>
 
           <p id="roomMessage" role="status"></p>
         </div>
       </section>
 
-      <section id="roomLobby" class="room-lobby" aria-labelledby="roomCodeTitle" hidden>
-        <div>
-          <p class="eyebrow">Room code</p>
-          <h2 id="roomCodeTitle">----</h2>
-          <p id="roomStatus">Share this code so people can connect.</p>
-        </div>
-
-        <div>
-          <p class="eyebrow">Players</p>
-          <ul id="playerList"></ul>
-        </div>
-
-        <button id="leaveRoomButton" type="button">Leave Room</button>
-      </section>
-
       <section id="gameArea" class="game-area" aria-label="Gameplay area" hidden>
         <header class="game-header">
           <div>
-            <p class="eyebrow">Waiting room</p>
             <h2>Blindfold Brush</h2>
           </div>
-          <div class="round-status" aria-label="Round timer">
-            <span>Artist: Waiting</span>
-            <strong>00:30</strong>
+
+          <div class="game-header-actions">
+            <div class="room-code-badge" aria-label="Current room code">
+              <span>Room code</span>
+              <strong id="activeRoomCode">----</strong>
+              <button id="copyRoomCodeButton" class="copy-room-code-button" type="button" aria-label="Copy room code">⧉</button>
+            </div>
+
+            <div class="round-status" aria-label="Round timer">
+              <strong>--:--</strong>
+            </div>
+
+            <button id="leaveRoomButton" class="leave-room-button" type="button">Leave Room</button>
           </div>
         </header>
 
@@ -69,32 +69,31 @@
           </aside>
 
           <section class="drawing-panel" aria-label="Drawing area">
-            <div class="prompt-card">
-              <p class="eyebrow">Guessing hint</p>
-              <strong>_ _ _ _ _ &nbsp; _ _ _ _ _ _</strong>
+            <div id="promptCard" class="prompt-card" hidden>
+              <div>
+                <p id="promptLabel" class="eyebrow">Choose a word</p>
+                <strong id="promptHint" aria-live="polite"></strong>
+              </div>
+              <div id="promptOptions" class="prompt-options"></div>
             </div>
 
             <div class="canvas-stage">
               <canvas id="drawingCanvas" width="900" height="560" aria-label="Drawing canvas"></canvas>
             </div>
 
-            <section class="toolbar" aria-label="Drawing tools">
+            <section class="toolbar" aria-label="Drawing tools" hidden>
               <div class="controls" role="toolbar" aria-label="Drawing tools">
-                <label for="brushColor">Color</label>
-                <input id="brushColor" type="color" value="#1f2937">
-
                 <div class="paint-supplies">
                   <div class="color-palette" aria-label="Brush colors">
-                    <button class="color-swatch is-active" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
                     <button class="color-swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444;" aria-label="Red"></button>
                     <button class="color-swatch" type="button" data-color="#f97316" style="--swatch: #f97316;" aria-label="Orange"></button>
                     <button class="color-swatch" type="button" data-color="#facc15" style="--swatch: #facc15;" aria-label="Yellow"></button>
-                    <button class="color-swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e;" aria-label="Green"></button>
-                    <button class="color-swatch" type="button" data-color="#14b8a6" style="--swatch: #14b8a6;" aria-label="Teal"></button>
-                    <button class="color-swatch" type="button" data-color="#3b82f6" style="--swatch: #3b82f6;" aria-label="Blue"></button>
-                    <button class="color-swatch" type="button" data-color="#8b5cf6" style="--swatch: #8b5cf6;" aria-label="Violet"></button>
-                    <button class="color-swatch" type="button" data-color="#ec4899" style="--swatch: #ec4899;" aria-label="Pink"></button>
-                    <button class="color-swatch" type="button" data-color="#ffffff" style="--swatch: #ffffff;" aria-label="White"></button>
+                    <button class="color-swatch" type="button" data-color="#16a34a" style="--swatch: #16a34a;" aria-label="Green"></button>
+                    <button class="color-swatch" type="button" data-color="#06b6d4" style="--swatch: #06b6d4;" aria-label="Cyan"></button>
+                    <button class="color-swatch is-active" type="button" data-color="#2563eb" style="--swatch: #2563eb;" aria-label="Blue"></button>
+                    <button class="color-swatch" type="button" data-color="#4f46e5" style="--swatch: #4f46e5;" aria-label="Indigo"></button>
+                    <button class="color-swatch" type="button" data-color="#9333ea" style="--swatch: #9333ea;" aria-label="Violet"></button>
+                    <button class="color-swatch" type="button" data-color="#1f2937" style="--swatch: #1f2937;" aria-label="Charcoal"></button>
                   </div>
 
                   <div class="tool-group" aria-label="Tools">
@@ -125,7 +124,7 @@
             <div class="chat-messages" aria-live="polite"></div>
 
             <form id="chatForm" class="chat-form">
-              <label for="guessInput">Guess</label>
+              <label for="guessInput">Message</label>
               <div class="chat-input-row">
                 <input id="guessInput" type="text" placeholder="Type a guess">
                 <button type="submit">Send</button>
@@ -133,6 +132,14 @@
             </form>
           </aside>
         </div>
+
+        <section id="roundResultsOverlay" class="round-results-overlay" hidden aria-live="polite">
+          <div class="round-results-card">
+            <p class="eyebrow">Time is up</p>
+            <h2>The word was <strong id="roundResultsPrompt"></strong></h2>
+            <ul id="roundResultsList" class="round-results-list"></ul>
+          </div>
+        </section>
       </section>
     </main>
 
@@ -141,49 +148,125 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script src="network.js"></script>
     <script src="rooms.js"></script>
+    <script src="scoring.js"></script>
     <script>
       const roomApi = window.BlindfoldBrushRooms;
       const mainMenu = document.querySelector("#mainMenu");
-      const roomLobby = document.querySelector("#roomLobby");
       const gameArea = document.querySelector("#gameArea");
       const nicknameInput = document.querySelector("#nicknameInput");
       const roomCodeInput = document.querySelector("#roomCodeInput");
       const createRoomButton = document.querySelector("#createRoomButton");
       const joinRoomButton = document.querySelector("#joinRoomButton");
+      const joinRoomPanel = document.querySelector("#joinRoomPanel");
+      const confirmJoinRoomButton = document.querySelector("#confirmJoinRoomButton");
+      const cancelJoinRoomButton = document.querySelector("#cancelJoinRoomButton");
       const leaveRoomButton = document.querySelector("#leaveRoomButton");
       const roomMessage = document.querySelector("#roomMessage");
-      const roomCodeTitle = document.querySelector("#roomCodeTitle");
-      const roomStatus = document.querySelector("#roomStatus");
-      const playerList = document.querySelector("#playerList");
+      const chatForm = document.querySelector("#chatForm");
+      const chatMessages = document.querySelector(".chat-messages");
+      const guessInput = document.querySelector("#guessInput");
+      const roundStatus = document.querySelector(".round-status");
+      const timerDisplay = document.querySelector(".round-status strong");
+      const leaderboardList = document.querySelector(".leaderboard-list");
+      const activeRoomCode = document.querySelector("#activeRoomCode");
+      const copyRoomCodeButton = document.querySelector("#copyRoomCodeButton");
+      const promptCard = document.querySelector("#promptCard");
+      const promptLabel = document.querySelector("#promptLabel");
+      const promptHint = document.querySelector("#promptHint");
+      const promptOptions = document.querySelector("#promptOptions");
+      const roundResultsOverlay = document.querySelector("#roundResultsOverlay");
+      const roundResultsPrompt = document.querySelector("#roundResultsPrompt");
+      const roundResultsList = document.querySelector("#roundResultsList");
       const currentRoomKey = "blindfold-brush-current-room";
       const currentPlayerKey = "blindfold-brush-current-player";
+      const roundLengthSeconds = 30;
+      const resultsLengthSeconds = 5;
+      const artistPointsPerCorrectGuess = window.BlindfoldBrushScoringSettings?.artistPointsPerCorrectGuess || 20;
+      const promptPool = [
+        "Apple", "Ball", "Boat", "Book", "Bus", "Cake", "Car", "Cat", "Cloud", "Crown",
+        "Dog", "Door", "Duck", "Eye", "Fish", "Flower", "Fork", "Hat", "House", "Key",
+        "Moon", "Mug", "Pencil", "Pizza", "Rainbow", "Shoe", "Star", "Sun", "Tree", "Train",
+        "Umbrella", "Whale", "Bicycle", "Butterfly", "Camera", "Castle", "Chicken", "Clock",
+        "Cupcake", "Dinosaur", "Donut", "Dragon", "Elephant", "Firework", "Guitar", "Helicopter",
+        "Ice cream", "Jacket", "Lighthouse", "Mermaid", "Octopus", "Parachute", "Penguin", "Rocket",
+        "Sandwich", "Snowman", "Telescope", "Toothbrush", "Volcano", "Windmill", "Wizard", "Backpack",
+        "Campfire", "Compass", "Easel", "Feather", "Galaxy", "Ghost", "Magnet", "Mountain", "Robot",
+        "Satellite", "Scarecrow", "Treasure chest", "Anchor", "Aquarium", "Astronaut", "Barn", "Bridge",
+        "Cabin", "Cactus", "Candle", "Carousel", "Chameleon", "Chef", "Chimney", "Cookie", "Dolphin",
+        "Drum", "Ferris wheel", "Fireplace", "Flamingo", "Fountain", "Globe", "Kangaroo", "Kite", "Ladder",
+        "Lantern", "Piano", "Pirate", "Puzzle", "Shark", "Skis", "Swing", "Tiger", "Tractor", "Trumpet",
+        "Turtle", "Violin",
+      ];
 
       let roomManager = null;
       let currentPlayer = null;
+      let activeRoom = null;
       let currentRoomCode = null;
       let stopWatchingRoom = null;
       let stopPresence = null;
+      let timerId = null;
+      let timerTarget = null;
+      let transitionInProgress = false;
+      let resultsHideTimer = null;
+      let renderedChatSignature = "";
+      let drawingSyncQueue = Promise.resolve();
 
       function showRoomMessage(message) {
         roomMessage.textContent = message;
       }
 
+      async function copyRoomCode() {
+        const code = activeRoomCode.textContent.trim();
+
+        if (!code || code === "----") {
+          return;
+        }
+
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(code);
+          } else {
+            const helper = document.createElement("textarea");
+            helper.value = code;
+            helper.setAttribute("readonly", "");
+            helper.style.position = "fixed";
+            helper.style.opacity = "0";
+            document.body.append(helper);
+            helper.select();
+            document.execCommand("copy");
+            helper.remove();
+          }
+
+          copyRoomCodeButton.textContent = "✓";
+          window.setTimeout(() => { copyRoomCodeButton.textContent = "⧉"; }, 1400);
+        } catch (error) {
+          copyRoomCodeButton.textContent = "!";
+          window.setTimeout(() => { copyRoomCodeButton.textContent = "⧉"; }, 1400);
+        }
+      }
+
+      function showJoinRoomPanel() {
+        mainMenu.classList.add("is-joining");
+        joinRoomPanel.hidden = false;
+        showRoomMessage("");
+        roomCodeInput.focus();
+      }
+
+      function hideJoinRoomPanel() {
+        mainMenu.classList.remove("is-joining");
+        joinRoomPanel.hidden = true;
+        roomCodeInput.value = "";
+      }
+
       function setButtonsBusy(isBusy) {
         createRoomButton.disabled = isBusy;
         joinRoomButton.disabled = isBusy;
+        confirmJoinRoomButton.disabled = isBusy;
       }
 
       function createLocalPlayer() {
         const savedPlayer = window.localStorage.getItem(currentPlayerKey);
-
-        if (savedPlayer) {
-          return JSON.parse(savedPlayer);
-        }
-
-        return {
-          id: roomApi.createPlayerId(),
-          nickname: "Player",
-        };
+        return savedPlayer ? JSON.parse(savedPlayer) : { id: roomApi.createPlayerId(), nickname: "Player" };
       }
 
       function getCurrentPlayer() {
@@ -192,154 +275,501 @@
         return currentPlayer;
       }
 
+      function getActivePlayers(room) {
+        return (room.players || []).filter((player) => player.isActive);
+      }
+
+      function getArtist(room) {
+        const artistId = room.currentArtistId || room.hostId;
+        const players = getActivePlayers(room);
+        return players.find((player) => player.id === artistId) || players[0] || null;
+      }
+
+      function makePromptOptions(excludedPrompts = []) {
+        const excluded = new Set(excludedPrompts);
+        const availablePrompts = promptPool.filter((prompt) => !excluded.has(prompt));
+        const promptSource = availablePrompts.length >= 3 ? availablePrompts : promptPool;
+        return [...promptSource].sort(() => Math.random() - 0.5).slice(0, 3);
+      }
+
+      function getPromptExclusions(room) {
+        const history = [...new Set(getList(room.promptHistory).filter((prompt) => promptPool.includes(prompt)))];
+
+        if (history.length >= promptPool.length - 2) {
+          return [room.selectedPrompt];
+        }
+
+        return history;
+      }
+
+      function getMessages(room) {
+        return Array.isArray(room.messages) ? room.messages : Object.values(room.messages || {});
+      }
+
+      function getList(value) {
+        return Array.isArray(value) ? value : Object.values(value || {});
+      }
+
+      function everyoneHasGuessed(room) {
+        const artistId = getArtist(room)?.id;
+        const guessers = getActivePlayers(room).filter((player) => !player.isSpectator && player.id !== artistId);
+        const correctGuessers = new Set(getList(room.correctGuessers));
+
+        return guessers.length > 0 && guessers.every((player) => correctGuessers.has(player.id));
+      }
+
+      async function updateRoom(room) {
+        return roomManager.update({ ...room, updatedAt: Date.now() });
+      }
+
+      async function makeLiveRoom(room) {
+        if (room.phase === roomApi.ROOM_PHASES.inGame && room.currentArtistId && Array.isArray(room.promptOptions) && room.promptOptions.length >= 3) {
+          return room;
+        }
+
+        const artist = getActivePlayers(room).find((player) => player.id === room.hostId) || getActivePlayers(room)[0];
+        return updateRoom({
+          ...room,
+          phase: roomApi.ROOM_PHASES.inGame,
+          currentArtistId: artist?.id || null,
+          promptOptions: makePromptOptions(),
+          selectedPrompt: null,
+          roundStartedAt: null,
+          roundEndsAt: null,
+          resultsEndsAt: null,
+          correctGuessers: [],
+          drawingDataUrl: null,
+          roundPoints: [],
+          roundResult: null,
+        });
+      }
+
+      function renderLeaderboard(room) {
+        const scores = room.scores || {};
+        const players = getActivePlayers(room).sort((first, second) => (scores[second.id] || 0) - (scores[first.id] || 0));
+        const artist = getArtist(room);
+        leaderboardList.replaceChildren();
+
+        players.forEach((player, index) => {
+          const row = document.createElement("li");
+          const info = document.createElement("span");
+          const rank = document.createElement("span");
+          const name = document.createElement("strong");
+          const marker = document.createElement("span");
+          const score = document.createElement("span");
+          const isArtist = artist?.id === player.id;
+
+          row.className = `leaderboard-player${isArtist ? " is-artist" : ""}`;
+          info.className = "player-info";
+          rank.className = "rank";
+          rank.textContent = `${index + 1}.`;
+          name.textContent = player.nickname;
+          marker.className = "artist-marker";
+          marker.textContent = "🖌️";
+          marker.hidden = !isArtist;
+          score.className = "player-score";
+          score.textContent = String(scores[player.id] || 0);
+          info.append(rank, name, marker);
+          row.append(info, score);
+          leaderboardList.append(row);
+        });
+      }
+
+      function renderRoomChat(room) {
+        const messages = getMessages(room);
+        const signature = messages.map((message) => `${message.id || ""}:${message.type || "chat"}:${message.playerName || ""}:${message.text || ""}`).join("|");
+
+        if (signature === renderedChatSignature) {
+          return;
+        }
+
+        renderedChatSignature = signature;
+        chatMessages.replaceChildren();
+        messages.forEach((message) => {
+          const item = document.createElement("p");
+          item.className = message.type === "system" ? "chat-message system-message" : "chat-message";
+          if (message.type === "system") {
+            item.textContent = message.text;
+          } else {
+            const name = document.createElement("strong");
+            name.textContent = `${message.playerName}:`;
+            item.append(name, document.createTextNode(` ${message.text}`));
+          }
+          chatMessages.append(item);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function getHintRevealOrder(indexes, prompt) {
+        const order = [...indexes];
+        let seed = 0;
+
+        for (const character of String(prompt)) {
+          seed = (seed * 31 + character.charCodeAt(0)) >>> 0;
+        }
+
+        for (let index = order.length - 1; index > 0; index -= 1) {
+          seed = (seed * 1664525 + 1013904223) >>> 0;
+          const swapIndex = seed % (index + 1);
+          [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
+        }
+
+        return order;
+      }
+
+      function createHint(prompt, elapsedSeconds = 0) {
+        const letters = String(prompt || "").split("");
+        const indexes = letters.map((character, index) => /[a-z0-9]/i.test(character) ? index : null).filter((index) => index !== null);
+        const hintStartSecondsRemaining = 15;
+        const secondsRemaining = Math.max(0, roundLengthSeconds - elapsedSeconds);
+        const maxRevealCount = Math.ceil((indexes.length * 2) / 3);
+        const hintProgress = secondsRemaining > hintStartSecondsRemaining
+          ? 0
+          : Math.min(1, (hintStartSecondsRemaining - secondsRemaining + 1) / (hintStartSecondsRemaining + 1));
+        const revealCount = hintProgress > 0 ? Math.max(1, Math.floor(maxRevealCount * hintProgress)) : 0;
+        const revealed = new Set(getHintRevealOrder(indexes, prompt).slice(0, revealCount));
+        return letters.map((character, index) => /[a-z0-9]/i.test(character) ? (revealed.has(index) ? character : "_") : (character === " " ? "   " : character)).join(" ");
+      }
+
+      function calculateGuessPoints(room) {
+        const elapsedSeconds = room.roundStartedAt
+          ? Math.max(0, (Date.now() - room.roundStartedAt) / 1000)
+          : roundLengthSeconds;
+        const secondsRemaining = Math.max(0, roundLengthSeconds - elapsedSeconds);
+
+        return window.BlindfoldBrushCalculateGuessPoints
+          ? window.BlindfoldBrushCalculateGuessPoints(secondsRemaining)
+          : Math.round(25 + (75 * secondsRemaining / roundLengthSeconds));
+      }
+
+      function renderPromptState(room) {
+        const artist = getArtist(room);
+        const isArtist = artist?.id === currentPlayer.id;
+        const prompt = String(room.selectedPrompt || "").trim();
+        const options = Array.isArray(room.promptOptions) ? room.promptOptions : [];
+        promptOptions.replaceChildren();
+        promptCard.hidden = false;
+
+        if (room.resultsEndsAt > Date.now() && prompt) {
+          promptLabel.textContent = "Answer";
+          promptHint.textContent = prompt;
+          return;
+        }
+
+        if (!prompt) {
+          promptLabel.textContent = isArtist ? "Choose a word" : `Waiting for ${artist?.nickname || "the artist"} to choose a word...`;
+          promptHint.textContent = "";
+          if (isArtist) {
+            options.forEach((option) => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "prompt-option";
+              button.textContent = option;
+              button.addEventListener("click", () => choosePrompt(option));
+              promptOptions.append(button);
+            });
+          }
+          return;
+        }
+
+        const elapsed = room.roundStartedAt ? Math.max(0, Math.floor((Date.now() - room.roundStartedAt) / 1000)) : 0;
+        promptLabel.textContent = isArtist ? "Your word" : "Guessing hint";
+        promptHint.textContent = isArtist ? prompt : createHint(prompt, elapsed);
+      }
+
       function renderRoom(room) {
+        activeRoom = room;
+        document.body.classList.add("is-in-room");
         mainMenu.hidden = true;
-        roomLobby.hidden = false;
         gameArea.hidden = false;
-        roomCodeTitle.textContent = room.code;
-        roomStatus.textContent = room.hostId === currentPlayer.id
-          ? "Share this four-letter code so people can connect."
-          : "You joined the room.";
-        playerList.innerHTML = "";
-
-        room.players
-          .filter((player) => player.isActive)
-          .forEach((player) => {
-            const playerItem = document.createElement("li");
-            playerItem.textContent = `${player.nickname}${player.id === room.hostId ? " (Host)" : ""}`;
-            playerList.append(playerItem);
-          });
+        activeRoomCode.textContent = room.code;
+        renderLeaderboard(room);
+        renderRoundResults(room);
+        renderPromptState(room);
+        renderRoomChat(room);
+        const isArtist = getArtist(room)?.id === currentPlayer.id;
+        const isResultsShowing = Number(room.resultsEndsAt) > Date.now();
+        const isDrawingArtist = isArtist && (Boolean(String(room.selectedPrompt || "").trim()) || isResultsShowing);
+        if (isDrawingArtist && !room.drawingDataUrl && isResultsShowing) {
+          window.BlindfoldBrushDrawing?.prepareRound();
+        }
+        window.BlindfoldBrushDrawing?.setArtistMode(isDrawingArtist);
+        if (!isArtist) {
+          window.BlindfoldBrushDrawing?.setRemoteDrawing(room.drawingDataUrl);
+        }
+        guessInput.disabled = false;
+        guessInput.placeholder = isArtist ? "Chat while drawing" : "Type a guess";
+        syncTimer(room);
       }
 
-      function showMainMenu() {
-        roomLobby.hidden = true;
-        gameArea.hidden = true;
-        mainMenu.hidden = false;
+      function renderRoundResults(room) {
+        const isVisible = Boolean(room.roundResult && Number(room.resultsEndsAt) > Date.now());
+
+        if (isVisible) {
+          window.clearTimeout(resultsHideTimer);
+          roundResultsOverlay.classList.remove("is-closing");
+          roundResultsOverlay.hidden = false;
+        } else if (!roundResultsOverlay.hidden) {
+          roundResultsOverlay.classList.add("is-closing");
+          window.clearTimeout(resultsHideTimer);
+          resultsHideTimer = window.setTimeout(() => {
+            roundResultsOverlay.hidden = true;
+            roundResultsOverlay.classList.remove("is-closing");
+          }, 240);
+        }
+
+        if (!isVisible) {
+          return;
+        }
+
+        roundResultsPrompt.textContent = room.roundResult.prompt;
+        roundResultsList.replaceChildren();
+        const points = getList(room.roundResult.points);
+
+        if (points.length === 0) {
+          const emptyRow = document.createElement("li");
+          emptyRow.className = "round-results-empty";
+          emptyRow.textContent = "No correct guesses this round.";
+          roundResultsList.append(emptyRow);
+          return;
+        }
+
+        points.forEach((entry) => {
+          const row = document.createElement("li");
+          const name = document.createElement("span");
+          const score = document.createElement("strong");
+
+          name.textContent = entry.playerName;
+          score.textContent = `+${entry.points}`;
+          row.append(name, score);
+          roundResultsList.append(row);
+        });
       }
 
-      // Stop listening to the online room (used when leaving or switching rooms).
+      function stopTimer() {
+        window.clearInterval(timerId);
+        timerId = null;
+        timerTarget = null;
+      }
+
+      function syncTimer(room) {
+        const target = Number(room.resultsEndsAt || room.roundEndsAt) || null;
+        if (!target) {
+          stopTimer();
+          timerDisplay.textContent = "--:--";
+          return;
+        }
+
+        const tick = () => {
+          const remaining = Math.ceil((target - Date.now()) / 1000);
+          const seconds = Math.max(0, remaining);
+          timerDisplay.textContent = `00:${String(room.resultsEndsAt ? 0 : seconds).padStart(2, "0")}`;
+          roundStatus.classList.toggle("is-low", seconds <= 5);
+          renderPromptState(room);
+          if (remaining <= 0 && !transitionInProgress) {
+            if (room.resultsEndsAt) {
+              advanceTurn(room);
+            } else {
+              beginResults(room);
+            }
+          }
+        };
+
+        if (timerTarget === target && timerId) {
+          tick();
+          return;
+        }
+
+        stopTimer();
+        timerTarget = target;
+        tick();
+        timerId = window.setInterval(tick, 100);
+      }
+
+      async function beginResults(room) {
+        transitionInProgress = true;
+        try {
+          const next = await roomManager.finalizeRound(room.code, resultsLengthSeconds);
+          window.BlindfoldBrushDrawing?.revealDrawing();
+          renderRoom(next);
+        } finally {
+          transitionInProgress = false;
+        }
+      }
+
+      async function advanceTurn(room) {
+        transitionInProgress = true;
+        try {
+          const latestRoom = await roomManager.get(room.code) || room;
+
+          // Only the client that still sees this results phase may advance it.
+          if (Number(latestRoom.resultsEndsAt) !== Number(room.resultsEndsAt)) {
+            renderRoom(latestRoom);
+            return;
+          }
+
+          const next = await roomManager.finishResults(latestRoom.code, latestRoom.resultsEndsAt);
+
+          if (next.resultsEndsAt) {
+            renderRoom(next);
+            return;
+          }
+
+          window.BlindfoldBrushDrawing?.prepareRound();
+          renderRoom(next);
+        } finally {
+          transitionInProgress = false;
+        }
+      }
+
+      async function choosePrompt(prompt) {
+        if (!activeRoom || getArtist(activeRoom)?.id !== currentPlayer.id || activeRoom.selectedPrompt || Number(activeRoom.resultsEndsAt) > Date.now()) {
+          return;
+        }
+
+        const now = Date.now();
+        const promptHistory = [...new Set([...getList(activeRoom.promptHistory), prompt])];
+        const next = await updateRoom({ ...activeRoom, selectedPrompt: prompt, promptOptions: [], promptHistory, roundStartedAt: now, roundEndsAt: now + roundLengthSeconds * 1000, resultsEndsAt: null, correctGuessers: [], drawingDataUrl: null, roundPoints: [], roundResult: null });
+        window.BlindfoldBrushDrawing?.prepareRound();
+        renderRoom(next);
+      }
+
+      async function saveMessage(room, playerName, text, type = "chat") {
+        return updateRoom({ ...room, messages: [...getMessages(room), { id: `message-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, playerName, text, type, createdAt: Date.now() }].slice(-100) });
+      }
+
       function stopListeningToRoom() {
-        if (stopWatchingRoom) {
-          stopWatchingRoom();
-          stopWatchingRoom = null;
-        }
-
-        if (stopPresence) {
-          stopPresence();
-          stopPresence = null;
-        }
+        stopWatchingRoom?.();
+        stopPresence?.();
+        stopWatchingRoom = null;
+        stopPresence = null;
       }
 
-      // Show the lobby and keep it in sync with every other device in the room.
-      function enterRoom(room) {
+      function registerDrawingSync() {
+        window.BlindfoldBrushDrawing?.setDrawingChangeHandler((drawingDataUrl) => {
+          if (!activeRoom || getArtist(activeRoom)?.id !== currentPlayer.id) {
+            return;
+          }
+
+          drawingSyncQueue = drawingSyncQueue
+            .catch(() => {})
+            .then(async () => {
+              if (!activeRoom || getArtist(activeRoom)?.id !== currentPlayer.id) {
+                return;
+              }
+
+              const next = await updateRoom({ ...activeRoom, drawingDataUrl });
+              activeRoom = next;
+            });
+        });
+      }
+
+      async function enterRoom(room) {
         stopListeningToRoom();
+        registerDrawingSync();
         currentRoomCode = room.code;
         window.localStorage.setItem(currentRoomKey, room.code);
         showRoomMessage("");
         renderRoom(room);
-
         stopPresence = roomManager.keepPlayerOnline(room.code, currentPlayer.id);
         stopWatchingRoom = roomManager.watch(room.code, (liveRoom) => {
           if (!liveRoom) {
             stopListeningToRoom();
-            currentRoomCode = null;
-            window.localStorage.removeItem(currentRoomKey);
             showMainMenu();
             showRoomMessage("This room was closed.");
             return;
           }
-
           renderRoom(liveRoom);
         });
       }
 
+      async function initializeRoom(room) {
+        const liveRoom = await makeLiveRoom(room);
+        await enterRoom(liveRoom);
+      }
+
+      function showMainMenu() {
+        stopTimer();
+        document.body.classList.remove("is-in-room");
+        gameArea.hidden = true;
+        mainMenu.hidden = false;
+        hideJoinRoomPanel();
+        renderedChatSignature = "";
+        chatMessages.replaceChildren();
+      }
+
       async function leaveCurrentRoom() {
         const roomCode = currentRoomCode || window.localStorage.getItem(currentRoomKey);
-
         stopListeningToRoom();
         currentRoomCode = null;
         window.localStorage.removeItem(currentRoomKey);
         showMainMenu();
-
         if (roomCode) {
-          try {
-            await roomManager.leave(roomCode, currentPlayer.id);
-          } catch (error) {
-            window.console.warn("Could not leave room.", error);
-          }
+          await roomManager.leave(roomCode, currentPlayer.id);
         }
       }
+
+      chatForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!activeRoom) return;
+        const text = guessInput.value.trim();
+        if (!text) return;
+        const isArtist = getArtist(activeRoom)?.id === currentPlayer.id;
+        const correctGuessers = getList(activeRoom.correctGuessers);
+
+        if (!isArtist && correctGuessers.includes(currentPlayer.id)) {
+          guessInput.value = "";
+          return;
+        }
+
+        guessInput.value = "";
+        const isCorrect = !isArtist && activeRoom.selectedPrompt && text.toLowerCase() === activeRoom.selectedPrompt.toLowerCase();
+
+        if (isCorrect) {
+          const guessPoints = calculateGuessPoints(activeRoom);
+          const next = await roomManager.recordCorrectGuess(activeRoom.code, {
+            playerId: currentPlayer.id,
+            playerName: currentPlayer.nickname,
+            guessPoints,
+            artistPoints: artistPointsPerCorrectGuess,
+          });
+          renderRoom(next);
+          if (everyoneHasGuessed(next)) {
+            await beginResults(next);
+          }
+          return;
+        }
+
+        const next = await saveMessage(activeRoom, currentPlayer.nickname, text);
+        renderRoom(next);
+      });
 
       if (!roomApi) {
         showRoomMessage("Room code helpers are not loaded yet.");
       } else {
         try {
           roomManager = new roomApi.BlindfoldBrushRoomManager();
+          currentPlayer = createLocalPlayer();
+          nicknameInput.value = currentPlayer.nickname;
+          roomCodeInput.addEventListener("input", () => { roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value); });
+
+          createRoomButton.addEventListener("click", async () => {
+            setButtonsBusy(true);
+            try { await initializeRoom(await roomManager.create(getCurrentPlayer())); } catch (error) { showRoomMessage(error.message); } finally { setButtonsBusy(false); }
+          });
+          joinRoomButton.addEventListener("click", showJoinRoomPanel);
+          confirmJoinRoomButton.addEventListener("click", async () => {
+            const code = roomApi.normalizeRoomCode(roomCodeInput.value);
+            if (code.length !== roomApi.ROOM_CODE_LENGTH) { showRoomMessage("Enter a four-letter room code."); return; }
+            setButtonsBusy(true);
+            try { await initializeRoom(await roomManager.join(code, getCurrentPlayer())); } catch (error) { showRoomMessage(error.message); } finally { setButtonsBusy(false); }
+          });
+          cancelJoinRoomButton.addEventListener("click", () => { hideJoinRoomPanel(); showRoomMessage(""); });
+          roomCodeInput.addEventListener("keydown", (event) => { if (event.key === "Enter") confirmJoinRoomButton.click(); });
+          leaveRoomButton.addEventListener("click", leaveCurrentRoom);
+          copyRoomCodeButton.addEventListener("click", copyRoomCode);
         } catch (error) {
           showRoomMessage(error.message);
-        }
-
-        currentPlayer = createLocalPlayer();
-        nicknameInput.value = currentPlayer.nickname;
-
-        roomCodeInput.addEventListener("input", () => {
-          roomCodeInput.value = roomApi.normalizeRoomCode(roomCodeInput.value);
-        });
-
-        createRoomButton.addEventListener("click", async () => {
-          if (!roomManager) {
-            return;
-          }
-
-          setButtonsBusy(true);
-          showRoomMessage("Creating room...");
-
-          try {
-            const room = await roomManager.create(getCurrentPlayer());
-            enterRoom(room);
-          } catch (error) {
-            showRoomMessage(error.message);
-          } finally {
-            setButtonsBusy(false);
-          }
-        });
-
-        joinRoomButton.addEventListener("click", async () => {
-          if (!roomManager) {
-            return;
-          }
-
-          const roomCode = roomApi.normalizeRoomCode(roomCodeInput.value);
-
-          if (roomCode.length !== roomApi.ROOM_CODE_LENGTH) {
-            showRoomMessage("Enter a four-letter room code.");
-            return;
-          }
-
-          setButtonsBusy(true);
-          showRoomMessage("Joining room...");
-
-          try {
-            const room = await roomManager.join(roomCode, getCurrentPlayer());
-            enterRoom(room);
-          } catch (error) {
-            showRoomMessage(error.message);
-          } finally {
-            setButtonsBusy(false);
-          }
-        });
-
-        leaveRoomButton.addEventListener("click", leaveCurrentRoom);
-
-        // If the page was refreshed while in a room, rejoin it.
-        const savedRoomCode = window.localStorage.getItem(currentRoomKey);
-
-        if (roomManager && savedRoomCode) {
-          roomManager.join(savedRoomCode, getCurrentPlayer())
-            .then(enterRoom)
-            .catch(() => {
-              window.localStorage.removeItem(currentRoomKey);
-            });
         }
       }
     </script>
