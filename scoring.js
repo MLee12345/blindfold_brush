@@ -1,7 +1,7 @@
 const SCORING_SETTINGS = {
-  maxGuessPoints: 1000,
-  minGuessPoints: 250,
-  artistPointsPerCorrectGuess: 200,
+  maxGuessPoints: 100,
+  minGuessPoints: 25,
+  artistPointsPerCorrectGuess: 20,
   roundSeconds: 30,
 };
 

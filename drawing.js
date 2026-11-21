@@ -21,6 +21,8 @@ let roundTimer = null;
 let selectedTool = "pen";
 let selectedColor = "#ef4444";
 let canUseDrawingTools = false;
+let drawingChangeHandler = null;
+let remoteDrawingDataUrl = null;
 
 function resizeHiddenCanvas() {
   hiddenCanvas.width = canvas.width;
@@ -60,6 +62,12 @@ function setBrushStyle(event) {
 
 function clearVisibleCanvas() {
   context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function emitDrawingChange() {
+  if (canUseDrawingTools && drawingChangeHandler) {
+    drawingChangeHandler(hiddenCanvas.toDataURL("image/png"));
+  }
 }
 
 function drawGrid() {
@@ -227,6 +235,8 @@ function stopDrawing(event) {
   if (canvas.hasPointerCapture(event.pointerId)) {
     canvas.releasePointerCapture(event.pointerId);
   }
+
+  emitDrawingChange();
 }
 
 function clearCanvas() {
@@ -234,7 +244,8 @@ function clearCanvas() {
     return;
   }
 
-  startRound();
+  prepareRound();
+  emitDrawingChange();
 }
 
 function undoLastAction() {
@@ -247,7 +258,36 @@ function undoLastAction() {
   if (previousCanvasState) {
     hiddenContext.putImageData(previousCanvasState, 0, 0);
     renderCanvasView();
+    emitDrawingChange();
   }
+}
+
+function setRemoteDrawing(dataUrl) {
+  if (dataUrl === remoteDrawingDataUrl) {
+    return;
+  }
+
+  remoteDrawingDataUrl = dataUrl || null;
+
+  if (!dataUrl) {
+    hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+    renderCanvasView();
+    return;
+  }
+
+  const image = new Image();
+
+  image.onload = () => {
+    hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+    hiddenContext.drawImage(image, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+    renderCanvasView();
+  };
+
+  image.src = dataUrl;
+}
+
+function setDrawingChangeHandler(handler) {
+  drawingChangeHandler = typeof handler === "function" ? handler : null;
 }
 
 function handleKeyboardShortcut(event) {
@@ -321,7 +361,7 @@ function setDrawingToolsAvailable(isAvailable) {
   }
 
   document.querySelector(".controls").hidden = !isAvailable;
-  document.querySelector(".toolbar").hidden = !isAvailable;
+  document.querySelector(".toolbar").hidden = false;
   renderCanvasView();
 }
 
@@ -332,6 +372,8 @@ window.BlindfoldBrushDrawing = {
   prepareRound,
   resetCanvas: startRound,
   revealDrawing,
+  setDrawingChangeHandler,
+  setRemoteDrawing,
 };
 canvas.addEventListener("pointerdown", startDrawing);
 canvas.addEventListener("pointermove", draw);
